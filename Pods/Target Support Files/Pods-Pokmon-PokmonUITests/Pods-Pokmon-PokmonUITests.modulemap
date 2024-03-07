@@ -1,0 +1,6 @@
+framework module Pods_Pokmon_PokmonUITests {
+  umbrella header "Pods-Pokmon-PokmonUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
