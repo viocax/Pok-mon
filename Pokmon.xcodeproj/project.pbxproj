@@ -12,7 +12,6 @@
 		6445D8332B99C43C0028E2C1 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6445D8322B99C43C0028E2C1 /* AppDelegate.swift */; };
 		6445D8352B99C43C0028E2C1 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6445D8342B99C43C0028E2C1 /* SceneDelegate.swift */; };
 		6445D8372B99C43C0028E2C1 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6445D8362B99C43C0028E2C1 /* ViewController.swift */; };
-		6445D83A2B99C43C0028E2C1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6445D8382B99C43C0028E2C1 /* Main.storyboard */; };
 		6445D83C2B99C43D0028E2C1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6445D83B2B99C43D0028E2C1 /* Assets.xcassets */; };
 		6445D83F2B99C43D0028E2C1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6445D83D2B99C43D0028E2C1 /* LaunchScreen.storyboard */; };
 		6445D84A2B99C43D0028E2C1 /* PokmonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6445D8492B99C43D0028E2C1 /* PokmonTests.swift */; };
@@ -43,7 +42,6 @@
 		6445D8322B99C43C0028E2C1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		6445D8342B99C43C0028E2C1 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		6445D8362B99C43C0028E2C1 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		6445D8392B99C43C0028E2C1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		6445D83B2B99C43D0028E2C1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6445D83E2B99C43D0028E2C1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6445D8402B99C43D0028E2C1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -129,7 +127,6 @@
 				6445D8322B99C43C0028E2C1 /* AppDelegate.swift */,
 				6445D8342B99C43C0028E2C1 /* SceneDelegate.swift */,
 				6445D8362B99C43C0028E2C1 /* ViewController.swift */,
-				6445D8382B99C43C0028E2C1 /* Main.storyboard */,
 				6445D83B2B99C43D0028E2C1 /* Assets.xcassets */,
 				6445D83D2B99C43D0028E2C1 /* LaunchScreen.storyboard */,
 				6445D8402B99C43D0028E2C1 /* Info.plist */,
@@ -164,7 +161,6 @@
 				8A2B226E49A9FE525BAC5696 /* Pods-PokmonTests.debug.xcconfig */,
 				D06215AE50CFEFAE40288C5D /* Pods-PokmonTests.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -280,7 +276,6 @@
 			files = (
 				6445D83F2B99C43D0028E2C1 /* LaunchScreen.storyboard in Resources */,
 				6445D83C2B99C43D0028E2C1 /* Assets.xcassets in Resources */,
-				6445D83A2B99C43C0028E2C1 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -464,14 +459,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		6445D8382B99C43C0028E2C1 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				6445D8392B99C43C0028E2C1 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		6445D83D2B99C43D0028E2C1 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -611,11 +598,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = B4465P4QBZ;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Pokmon/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -640,11 +627,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = B4465P4QBZ;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Pokmon/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
