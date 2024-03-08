@@ -1,5 +1,5 @@
 //
-//  PokemonResponse.swift
+//  PokemonListResponse.swift
 //  Pokmon
 //
 //  Created by drake on 2024/3/7.
@@ -7,19 +7,13 @@
 
 import Foundation
 
-struct PokemonResponse: Codable {
-    struct Item: Codable {
-        var name: String
-        var url: String
-        init(from decoder: Decoder) throws {
-            let container: KeyedDecodingContainer<PokemonResponse.Item.CodingKeys> = try decoder.container(keyedBy: PokemonResponse.Item.CodingKeys.self)
-            self.name = (try? container.decode(String.self, forKey: .name)) ?? ""
-            self.url = (try? container.decode(String.self, forKey: .url)) ?? ""
-        }
-    }
+struct PokemonListResponse: Codable {
     let results: [Item]
     let offset: Int?
     let totalCount: Int
+}
+
+extension PokemonListResponse {
     var isEnd: Bool {
         return offset == nil
     }
@@ -30,7 +24,8 @@ struct PokemonResponse: Codable {
     }
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: Key.self)
-        self.results = try container.decode([PokemonResponse.Item].self, forKey: .results)
+        let infos = try container.decode([PokomBaseElementInfo].self, forKey: .results)
+        self.results = try infos.map { try PokemonListResponse.Item($0) }
 
         self.totalCount = try container.decode(Int.self, forKey: .totalCount)
         let nextPageURLString = try? container.decode(String.self, forKey: .nextOffset)
@@ -45,5 +40,24 @@ struct PokemonResponse: Codable {
             }
         }
         self.offset = nil
+    }
+}
+
+// MARK: PokemonListResponse.Item
+extension PokemonListResponse {
+    struct Item: Codable {
+        var number: Int
+        var name: String
+        var url: String
+        init(_ info: PokomBaseElementInfo) throws {
+            self.name = info.name
+            self.url = info.url
+            let urlComponet = URLComponents(string: url)
+            if let numberString = urlComponet?.path.split(separator: "/").last, let number = Int(numberString) {
+                self.number = number
+                return
+            }
+            throw URLError(.badServerResponse)
+        }
     }
 }

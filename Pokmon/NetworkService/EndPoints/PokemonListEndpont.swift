@@ -17,7 +17,7 @@ struct PokemonListEndpont {
 }
 
 extension PokemonListEndpont: Endpoint, Codable {
-    typealias Model = PokemonResponse
+    typealias Model = PokemonListResponse
 
     var path: String {
         return "pokemon"
