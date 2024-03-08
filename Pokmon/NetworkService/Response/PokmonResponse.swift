@@ -57,12 +57,12 @@ extension PokmonResponse: Codable {
     }
     struct TypeModel: Codable {
         var slot: Int
-        var type: `Type`
+        var type: PokemonType
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.slot = try container.decode(Int.self, forKey: .slot)
             let info = try container.decode(PokomBaseElementInfo.self, forKey: .type)
-            if let type = Type(rawValue: info.name) {
+            if let type = PokemonType(rawValue: info.name) {
                 self.type = type
             } else {
                 throw URLError(.badServerResponse)
@@ -73,7 +73,7 @@ extension PokmonResponse: Codable {
 
 // MARK: PokmonResponse.Type
 extension PokmonResponse {
-    enum `Type`: String, Codable {
+    enum PokemonType: String, Codable, TypeCornerProtocol {
         case normal
         case fighting
         case flying
@@ -184,4 +184,3 @@ extension PokmonResponse {
         }
     }
 }
-
