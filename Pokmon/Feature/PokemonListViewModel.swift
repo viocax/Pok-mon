@@ -23,6 +23,7 @@ extension PokemonListViewModel {
         }
     }
     struct Input {
+        let isFavorite: Driver<Bool>
         let bindView: Driver<Void>
         let loadMore: Driver<Void>
         let clickCell: Driver<CellViewModel>

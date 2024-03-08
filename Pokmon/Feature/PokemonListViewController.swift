@@ -12,6 +12,7 @@ import RxCocoa
 class PokemonListViewController: UIViewController {
 
     private let tableView: UITableView = .init(frame: .zero, style: .insetGrouped)
+    private let loadMorePublisher: PublishRelay<Bool> = .init()
     private let disposeBag = DisposeBag()
 
     override func viewDidLoad() {
@@ -50,5 +51,21 @@ extension PokemonListViewController {
 //                (cell as? PokemonCell)?.bindView(<#CellViewModel#>)
                 return cell
             }.disposed(by: disposeBag)
+        tableView.rx.setDelegate(self)
+            .disposed(by: disposeBag)
+    }
+}
+
+// MARK: UIScrollViewDelegate
+extension PokemonListViewController: UIScrollViewDelegate {
+    private func detectScrollToBottomEdge(_ scrollView: UIScrollView) {
+        let isScrollToBottom = scrollView.contentOffset.y + scrollView.frame.size.height >= scrollView.contentSize.height
+        loadMorePublisher.accept(isScrollToBottom)
+    }
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        detectScrollToBottomEdge(scrollView)
+    }
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        detectScrollToBottomEdge(scrollView)
     }
 }

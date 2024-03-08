@@ -18,6 +18,7 @@ final class PokemonCell: UITableViewCell {
     private let isFavoriteButton: UIButton = .init()
     private let typesStackView: UIStackView = .init()
     private var disposeBag: DisposeBag = .init()
+    static let placeHolder: UIImage? = UIImage(named: "pokeball")
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -33,6 +34,7 @@ final class PokemonCell: UITableViewCell {
         super.prepareForReuse()
         disposeBag = .init()
         thumbNailImageView.kf.cancelDownloadTask()
+        thumbNailImageView.image = Self.placeHolder
     }
 
     func setupUIAttribute() {
@@ -118,7 +120,7 @@ final class PokemonCell: UITableViewCell {
     }
     var imageURL: Binder<URL?> {
         return Binder(self.thumbNailImageView) { image, url in
-            image.kf.setImage(with: url, placeholder: UIImage(named: "pokeball"))
+            image.kf.setImage(with: url, placeholder: Self.placeHolder)
         }
     }
     var isFaviorite: Binder<Bool> {

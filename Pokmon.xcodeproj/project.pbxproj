@@ -33,6 +33,8 @@
 		64C766E72B9B1747001A7A70 /* PokemonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766E62B9B1747001A7A70 /* PokemonCell.swift */; };
 		64C766E92B9B175D001A7A70 /* CellViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766E82B9B175D001A7A70 /* CellViewModel.swift */; };
 		64C766EB2B9B179F001A7A70 /* PokemonListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766EA2B9B179F001A7A70 /* PokemonListViewModel.swift */; };
+		64C766EE2B9B1DCD001A7A70 /* EmptyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766ED2B9B1DCD001A7A70 /* EmptyView.swift */; };
+		64C766F02B9B1F12001A7A70 /* IndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766EF2B9B1F12001A7A70 /* IndicatorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -80,6 +82,8 @@
 		64C766E62B9B1747001A7A70 /* PokemonCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonCell.swift; sourceTree = "<group>"; };
 		64C766E82B9B175D001A7A70 /* CellViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellViewModel.swift; sourceTree = "<group>"; };
 		64C766EA2B9B179F001A7A70 /* PokemonListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonListViewModel.swift; sourceTree = "<group>"; };
+		64C766ED2B9B1DCD001A7A70 /* EmptyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyView.swift; sourceTree = "<group>"; };
+		64C766EF2B9B1F12001A7A70 /* IndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorView.swift; sourceTree = "<group>"; };
 		70A26F37C95A81FB93451C9B /* Pods-Pokmon.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokmon.debug.xcconfig"; path = "Target Support Files/Pods-Pokmon/Pods-Pokmon.debug.xcconfig"; sourceTree = "<group>"; };
 		8A2B226E49A9FE525BAC5696 /* Pods-PokmonTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PokmonTests.debug.xcconfig"; path = "Target Support Files/Pods-PokmonTests/Pods-PokmonTests.debug.xcconfig"; sourceTree = "<group>"; };
 		8E10D9AAEC1959DA0D16D5D3 /* Pods-Pokmon-PokmonUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokmon-PokmonUITests.debug.xcconfig"; path = "Target Support Files/Pods-Pokmon-PokmonUITests/Pods-Pokmon-PokmonUITests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -220,6 +224,8 @@
 			isa = PBXGroup;
 			children = (
 				64C766E32B9B0E87001A7A70 /* TypeCornerButton.swift */,
+				64C766ED2B9B1DCD001A7A70 /* EmptyView.swift */,
+				64C766EF2B9B1F12001A7A70 /* IndicatorView.swift */,
 			);
 			path = UIComponent;
 			sourceTree = "<group>";
@@ -510,6 +516,7 @@
 				64C766CD2B99C7ED001A7A70 /* NetworkService.swift in Sources */,
 				64C766CF2B99C84C001A7A70 /* Encodable++Extension.swift in Sources */,
 				6445D8372B99C43C0028E2C1 /* PokemonListViewController.swift in Sources */,
+				64C766EE2B9B1DCD001A7A70 /* EmptyView.swift in Sources */,
 				64C766E72B9B1747001A7A70 /* PokemonCell.swift in Sources */,
 				6445D8332B99C43C0028E2C1 /* AppDelegate.swift in Sources */,
 				64C766E42B9B0E87001A7A70 /* TypeCornerButton.swift in Sources */,
@@ -518,6 +525,7 @@
 				64C766EB2B9B179F001A7A70 /* PokemonListViewModel.swift in Sources */,
 				64C766E92B9B175D001A7A70 /* CellViewModel.swift in Sources */,
 				64C766E22B9AE8ED001A7A70 /* PokemonSpeciesEndpoint.swift in Sources */,
+				64C766F02B9B1F12001A7A70 /* IndicatorView.swift in Sources */,
 				64C766D72B99CA73001A7A70 /* PokemonListResponse.swift in Sources */,
 				64C766CB2B99C7D6001A7A70 /* Endpoint.swift in Sources */,
 				64C766DC2B9AC0AE001A7A70 /* PokomBaseElementInfo.swift in Sources */,
