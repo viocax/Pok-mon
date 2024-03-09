@@ -35,6 +35,8 @@ class PokemonListViewController: UIViewController {
 
 extension PokemonListViewController {
     func setupUIAttribute() {
+        title = "Pokemon List"
+        navigationController?.navigationBar.prefersLargeTitles = true
         isFavoriteButton.setImage(.init(systemName: "bookmark"), for: .normal)
         navigationItem.setLeftBarButton(.init(customView: isFavoriteButton), animated: false)
         view.backgroundColor = .white

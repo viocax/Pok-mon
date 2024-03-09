@@ -17,18 +17,21 @@ final class CellViewModel {
 
 extension CellViewModel {
     class Dependency {
+        let number: Int
         let service: NetworkService
         var sepies: PokemonSpeciesResponse?
         var pokemon: PokmonResponse?
         let source: PokemonListResponse.Item
         let repository: RepositoryProtocol
         init(
+            number: Int,
             sepies: PokemonSpeciesResponse? = nil,
             pokemon: PokmonResponse? = nil,
             source: PokemonListResponse.Item,
             service: NetworkService = APIService.share,
             repository: RepositoryProtocol = UserDefaultWrapper()
         ) {
+            self.number = number
             self.sepies = sepies
             self.pokemon = pokemon
             self.source = source
@@ -38,11 +41,12 @@ extension CellViewModel {
     }
     struct Input {
         let bindView: Driver<Void>
-        let clickIsFavior: Driver<Void>
     }
     struct Output {
+        let number: Driver<String>
         let name: Driver<String>
-        let isFavior: Driver<Bool>
+        let height: Driver<Int>
+        let width: Driver<Int>
         let imageURL: Driver<String>
         let types: Driver<[TypeCornerProtocol]>
     }
@@ -89,13 +93,16 @@ extension CellViewModel {
         let name = Driver
             .merge(
                 loading,
-                pokemon.map(\.name)
+                pokemon.map { $0.name }
             )
-        
+        let numberOutput = input.bindView
+            .map { "No.\(number)" }
         
         return .init(
+            number: numberOutput,
             name:  name,
-            isFavior: .empty(),
+            height: pokemon.map(\.height),
+            width: pokemon.map(\.weight),
             imageURL: pokemon.map(\.sprites.image),
             types: getTypes
         )

@@ -53,10 +53,10 @@ extension PokemonListViewModel {
         var currentOffset: Int? = 0
         func reciveResponse(_ response: PokemonListResponse) {
             if let offset = response.offset {
-                currentOffset = offset
-                let cell = response.results.map { item in
-                    CellViewModel(dependency: .init(source: item))
+                let cell = response.results.enumerated().map { index, item in
+                    CellViewModel(dependency: .init(number: index + (currentOffset ?? .zero), source: item))
                 }
+                currentOffset = offset
                 listsRelay.accept(listsRelay.value + cell)
             } else {
                 currentOffset = nil

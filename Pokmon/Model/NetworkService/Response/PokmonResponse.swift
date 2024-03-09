@@ -10,6 +10,8 @@ import class UIKit.UIColor
 
 struct PokmonResponse {
     var name: String
+    var height: Int
+    var weight: Int
     var sprites: Sprite
     var species: PokomBaseElementInfo
     var types: [TypeModel]
