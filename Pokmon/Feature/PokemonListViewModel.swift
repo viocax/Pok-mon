@@ -18,29 +18,88 @@ final class PokemonListViewModel {
 extension PokemonListViewModel {
     struct Dependency {
         let service: NetworkService
-        init(service: NetworkService = APIService.share) {
+        let repository: RepositoryProtocol
+        init(
+            service: NetworkService = APIService.share,
+            repository: RepositoryProtocol = UserDefaultWrapper()
+        ) {
             self.service = service
+            self.repository = repository
         }
     }
     struct Input {
-        let isFavorite: Driver<Bool>
+        let clickFavorite: Driver<Void>
         let bindView: Driver<Void>
-        let loadMore: Driver<Void>
+        let loadMore: Driver<Bool>
         let clickCell: Driver<CellViewModel>
     }
     struct Output {
+        let isFavorite: Driver<Bool>
         let isLoading: Driver<Bool>
         let isEmpty: Driver<Bool>
         let list: Driver<[CellViewModel]>
         let configuration: Driver<Void>
     }
     func transform(_ input: Input) -> Output {
+        let hudTracker = HUDTracker()
+        let errorTracker = ErrorTracker()
+
+        let listsRelay = BehaviorRelay<[CellViewModel]>(value: [])
+        let list = listsRelay
+            .asDriver(onErrorDriveWith: .empty())
+        let isEmpty = list.map(\.isEmpty)
+            .distinctUntilChanged()
+
+        var currentOffset: Int? = 0
+        func reciveResponse(_ response: PokemonListResponse) {
+            if let offset = response.offset {
+                currentOffset = offset
+                let cell = response.results.map { item in
+                    CellViewModel(dependency: .init(source: item))
+                }
+                listsRelay.accept(listsRelay.value + cell)
+            } else {
+                currentOffset = nil
+            }
+        }
+
+        let loadMore = input.loadMore
+            .compactMap { $0 ? () : nil }
+        let fetchListEvent = Driver
+            .merge(
+                loadMore,
+                input.bindView
+            ).compactMap { currentOffset }
+            .flatMap { offset in
+                return self.dependency.service
+                    .request(PokemonListEndpont(offset: offset))
+                    .trackActivity(hudTracker)
+                    .trackError(errorTracker)
+                    .map(reciveResponse(_:))
+                    .asDriver(onErrorDriveWith: .empty())
+            }
+
+        var isFavorite = true
+        let isFavorteEvent = Driver
+            .merge(
+                input.bindView,
+                input.clickFavorite
+            ).map { _ -> Bool in
+                isFavorite.toggle()
+                return isFavorite
+            }
+        
+        let configuration = Driver
+            .merge(
+                fetchListEvent
+            )
+
         return .init(
-            isLoading: .empty(),
-            isEmpty: .empty(),
-            list: .empty(),
-            configuration: .empty()
+            isFavorite: isFavorteEvent,
+            isLoading: hudTracker.asDriver(),
+            isEmpty: isEmpty,
+            list: list,
+            configuration: configuration
         )
     }
 }
-

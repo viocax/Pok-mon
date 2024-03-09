@@ -14,9 +14,6 @@ struct PokemonListResponse: Codable {
 }
 
 extension PokemonListResponse {
-    var isEnd: Bool {
-        return offset == nil
-    }
     enum Key: String, CodingKey {
         case totalCount = "count"
         case nextOffset = "next"
@@ -30,7 +27,8 @@ extension PokemonListResponse {
         self.totalCount = try container.decode(Int.self, forKey: .totalCount)
         let nextPageURLString = try? container.decode(String.self, forKey: .nextOffset)
         guard nextPageURLString?.isEmpty == false else {
-            throw URLError(.badServerResponse)
+            self.offset = nil
+            return
         }
         let urlComponet = URLComponents(string: nextPageURLString ?? "")
         for item in urlComponet?.queryItems ?? [] {

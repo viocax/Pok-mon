@@ -20,12 +20,16 @@ class TypeCornerButton: UIButton {
             height: 24
         )
     }
-
     init(_ type: any TypeCornerProtocol) {
         super.init(frame: .zero)
-        self.titleLabel?.font = .systemFont(ofSize: 12)
-        self.layer.cornerRadius = intrinsicContentSize.height / 2
         updateStyle(type)
+        self.layer.cornerRadius = intrinsicContentSize.height / 2
+        self.setContentCompressionResistancePriority(.required, for: .horizontal)
+        self.setContentHuggingPriority(.required, for: .horizontal)
+        configuration = .plain()
+        configuration?.titlePadding = 10
+        configuration?.baseForegroundColor = .black
+        self.titleLabel?.font = .systemFont(ofSize: 12)
     }
 
     required init?(coder: NSCoder) {

@@ -6,6 +6,8 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
 
 class EmptyView: UIView {
     private let imageView: UIImageView = .init(image: .init(named: "empty"))
@@ -48,5 +50,28 @@ class EmptyView: UIView {
             label.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 20),
             label.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
         ])
+    }
+}
+
+extension Reactive where Base: UIView {
+    var isEmpty: Binder<Bool> {
+        return Binder(self.base) { targetView, isEmpty in
+            let emptyView = targetView.subviews.first(where: { $0 is EmptyView })
+            if isEmpty {
+                if emptyView == nil {
+                    let addedView = EmptyView()
+                    targetView.addSubview(addedView)
+                    addedView.translatesAutoresizingMaskIntoConstraints = false
+                    NSLayoutConstraint.activate([
+                        addedView.trailingAnchor.constraint(equalTo: targetView.trailingAnchor),
+                        addedView.leadingAnchor.constraint(equalTo: targetView.leadingAnchor),
+                        addedView.topAnchor.constraint(equalTo: targetView.topAnchor),
+                        addedView.bottomAnchor.constraint(equalTo: targetView.bottomAnchor)
+                    ])
+                }
+            } else {
+                emptyView?.removeFromSuperview()
+            }
+        }
     }
 }

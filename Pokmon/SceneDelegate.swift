@@ -18,7 +18,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
         self.window = .init(windowScene: scene)
-        self.window?.rootViewController = UINavigationController(rootViewController: PokemonListViewController())
+        let viewModel = PokemonListViewModel(dependency: .init())
+        self.window?.rootViewController = UINavigationController(rootViewController: PokemonListViewController(viewModel: viewModel))
         self.window?.makeKeyAndVisible()
     }
 
@@ -37,6 +38,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
+        UserDefaults.standard.synchronize()
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {
@@ -50,6 +52,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
 
-
+    
 }
 

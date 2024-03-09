@@ -19,15 +19,21 @@ extension CellViewModel {
     class Dependency {
         let service: NetworkService
         var sepies: PokemonSpeciesResponse?
-        let pokemon: PokmonResponse
+        var pokemon: PokmonResponse?
+        let source: PokemonListResponse.Item
+        let repository: RepositoryProtocol
         init(
-            sepies: PokemonSpeciesResponse?,
-            pokemon: PokmonResponse,
-            service: NetworkService = APIService.share
+            sepies: PokemonSpeciesResponse? = nil,
+            pokemon: PokmonResponse? = nil,
+            source: PokemonListResponse.Item,
+            service: NetworkService = APIService.share,
+            repository: RepositoryProtocol = UserDefaultWrapper()
         ) {
             self.sepies = sepies
             self.pokemon = pokemon
+            self.source = source
             self.service = service
+            self.repository = repository
         }
     }
     struct Input {
@@ -37,20 +43,61 @@ extension CellViewModel {
     struct Output {
         let name: Driver<String>
         let isFavior: Driver<Bool>
-        let imageURL: Driver<URL?>
-        let isLoading: Driver<Bool>
+        let imageURL: Driver<String>
         let types: Driver<[TypeCornerProtocol]>
-        let configuration: Driver<Void>
     }
     func transform(_ input: Input) -> Output {
+        let hudTracker = HUDTracker()
+        let number = self.dependency.source.number
+
+        let pokemon = input.bindView
+            .flatMap {
+                guard let pokemon = self.dependency.pokemon else {
+                    return self.dependency.service
+                        .request(PokemonEndpoint(id: "\(number)"))
+                        .trackActivity(hudTracker)
+                        .do(onNext: { response in
+                            self.dependency.pokemon = response
+                        })
+                        .asDriver(onErrorDriveWith: .empty())
+                }
+                return .just(pokemon)
+            }
+
+        let species = input.bindView
+            .flatMap { _ in
+                guard let species = self.dependency.sepies else {
+                    return self.dependency.service
+                        .request(PokemonSpeciesEndpoint(id: "\(number)"))
+                        .do(onNext: { response in
+                            self.dependency.sepies = response
+                        })
+                        .asDriver(onErrorDriveWith: .empty())
+                }
+                return .just(species)
+            }
+
+        let getTypes = pokemon
+            .map { response -> [any TypeCornerProtocol] in
+                return response.types.map(\.type)
+            }
+        let loading = hudTracker.distinctUntilChanged()
+            .compactMap {
+                return $0 ? "Loading..." : nil
+            }
+            
+        let name = Driver
+            .merge(
+                loading,
+                pokemon.map(\.name)
+            )
+        
         
         return .init(
-            name: .empty(),
+            name:  name,
             isFavior: .empty(),
-            imageURL: .empty(),
-            isLoading: .empty(),
-            types: .empty(),
-            configuration: .empty()
+            imageURL: pokemon.map(\.sprites.image),
+            types: getTypes
         )
     }
 }

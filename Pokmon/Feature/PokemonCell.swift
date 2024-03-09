@@ -18,7 +18,9 @@ final class PokemonCell: UITableViewCell {
     private let isFavoriteButton: UIButton = .init()
     private let typesStackView: UIStackView = .init()
     private var disposeBag: DisposeBag = .init()
+    private let animation: UIViewPropertyAnimator = .init(duration: 0.3, curve: .linear)
     static let placeHolder: UIImage? = UIImage(named: "pokeball")
+    static let errorImage: UIImage? = .init(named: "errorImage")
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -49,7 +51,8 @@ final class PokemonCell: UITableViewCell {
         typesStackView.axis = .horizontal
         typesStackView.spacing = 8
         cornerView.layer.borderColor = UIColor.gray.cgColor
-        nameLabel.text = "Loading..."
+        thumbNailImageView.image = Self.placeHolder
+        thumbNailImageView.rotate()
     }
     func setupLayout() {
         contentView.backgroundColor = .white
@@ -99,9 +102,6 @@ final class PokemonCell: UITableViewCell {
                 clickIsFavior: isFavoriteButton.rx.tap.asDriver()
             )
         let output = viewModel.transform(input)
-        output.configuration
-            .drive()
-            .disposed(by: disposeBag)
         output.name
             .drive(nameLabel.rx.text)
             .disposed(by: disposeBag)
@@ -114,13 +114,18 @@ final class PokemonCell: UITableViewCell {
         output.types
             .drive(types)
             .disposed(by: disposeBag)
-        output.isLoading
-            .drive()
-            .disposed(by: disposeBag)
     }
-    var imageURL: Binder<URL?> {
-        return Binder(self.thumbNailImageView) { image, url in
-            image.kf.setImage(with: url, placeholder: Self.placeHolder)
+    var imageURL: Binder<String> {
+        return Binder(self.thumbNailImageView) { image, urlString in
+            image.kf.setImage(with: URL(string: urlString), placeholder: Self.placeHolder, completionHandler: { result in
+                image.stopRotate()
+                switch result {
+                case .failure:
+                    image.image = Self.errorImage
+                default:
+                    break
+                }
+            })
         }
     }
     var isFaviorite: Binder<Bool> {
@@ -129,8 +134,10 @@ final class PokemonCell: UITableViewCell {
         }
     }
     var types: Binder<[any TypeCornerProtocol]> {
-        return Binder(typesStackView) { stackView, types in
+        return Binder(self) { cell, types in
             // TODO: 優化
+            let stackView = cell.typesStackView
+            cell.cornerView.layer.borderColor = types.first?.color.cgColor
             stackView.arrangedSubviews.forEach {
                 $0.removeFromSuperview()
             }

@@ -11,4 +11,5 @@ enum PkError: Error {
     case badRequest
     case urlError(URLError)
     case afError(AFError)
+    case unknown(Error)
 }

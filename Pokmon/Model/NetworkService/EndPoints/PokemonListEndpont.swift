@@ -10,7 +10,7 @@ import Alamofire
 struct PokemonListEndpont {
     var offset: Int
     var limit: Int
-    init(offset: Int = .zero, limit: Int = 20) {
+    init(offset: Int, limit: Int = 20) {
         self.offset = offset
         self.limit = limit
     }
