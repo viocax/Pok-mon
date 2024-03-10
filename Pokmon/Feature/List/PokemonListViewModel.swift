@@ -100,7 +100,7 @@ extension PokemonListViewModel {
                 loadMore,
                 input.bindView
             ).compactMap { currentOffset }
-            .flatMap { offset in
+            .flatMapLatest { offset in
                 return self.dependency.service
                     .request(PokemonListEndpont(offset: offset))
                     .trackActivity(hudTracker)
