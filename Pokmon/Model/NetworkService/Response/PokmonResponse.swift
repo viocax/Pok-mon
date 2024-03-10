@@ -21,25 +21,50 @@ struct PokmonResponse {
 
 extension PokmonResponse: Codable {
     struct Sprite: Codable {
-        var image: String
-        var female: String?
+        private var other: Ohter
+        var thumbnail: String
+
+        var defaultImage: String {
+            return other.officialArtwork.front_default ?? other.home.front_default ?? thumbnail
+        }
+        var female: String? {
+            return other.officialArtwork.front_female ?? other.home.front_female
+        }
         func getGenders() -> [(Gender, String)] {
             if let female = female {
                 return [
-                    (.male, image),
+                    (.male, defaultImage),
                     (.female, female)
                 ]
             }
-            return [(.male, image)]
+            return [(.male, defaultImage)]
         }
         enum Key: String, CodingKey {
-            case image = "front_default"
-            case female = "front_female"
+            case thumbnail = "front_default"
+            case other
         }
+
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Key.self)
-            self.image = try container.decode(String.self, forKey: .image)
-            self.female = try container.decodeIfPresent(String.self, forKey: .female)
+            self.thumbnail = try container.decode(String.self, forKey: .thumbnail)
+            self.other = try container.decode(Ohter.self, forKey: .other)
+        }
+        private struct Ohter: Codable {
+            var home: Info
+            var officialArtwork: Info
+            enum OtherKeys: String, CodingKey {
+                case home
+                case officialArtwork = "official-artwork"
+            }
+            init(from decoder: any Decoder) throws {
+                let container = try decoder.container(keyedBy: OtherKeys.self)
+                self.home = try container.decode(PokmonResponse.Sprite.Info.self, forKey: .home)
+                self.officialArtwork = try container.decode(PokmonResponse.Sprite.Info.self, forKey: .officialArtwork)
+            }
+        }
+        private struct Info: Codable {
+            var front_default: String?
+            var front_female: String?
         }
     }
     enum StatType: String, CaseIterable, Codable {

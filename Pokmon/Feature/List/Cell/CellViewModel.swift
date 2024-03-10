@@ -90,7 +90,7 @@ extension CellViewModel {
             name:  name,
             height: pokemon.map(\.height),
             width: pokemon.map(\.weight),
-            imageURL: pokemon.map(\.sprites.image),
+            imageURL: pokemon.map(\.sprites.thumbnail),
             types: getTypes
         )
     }
