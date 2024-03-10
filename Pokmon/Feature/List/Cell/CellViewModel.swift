@@ -24,13 +24,13 @@ extension CellViewModel {
         var sepies: PokemonSpeciesResponse?
         var pokemon: PokmonResponse?
         let source: PokemonListResponse.Item
-        let repository: RepositoryProtocol
+        let repository: FavoriteUseCase
         init(
             sepies: PokemonSpeciesResponse? = nil,
             pokemon: PokmonResponse? = nil,
             source: PokemonListResponse.Item,
             service: NetworkService = APIService.share,
-            repository: RepositoryProtocol = UserDefaultWrapper()
+            repository: FavoriteUseCase = UserDefaultWrapper.share
         ) {
             self.sepies = sepies
             self.pokemon = pokemon

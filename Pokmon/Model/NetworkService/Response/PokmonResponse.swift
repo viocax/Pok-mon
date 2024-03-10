@@ -9,6 +9,7 @@ import Foundation
 import class UIKit.UIColor
 
 struct PokmonResponse {
+    var id: Int
     var name: String
     var height: Int
     var weight: Int
@@ -78,6 +79,41 @@ extension PokmonResponse: Codable {
             } else {
                 throw URLError(.badServerResponse)
             }
+        }
+    }
+}
+
+extension PokmonResponse.Stat {
+    var color: UIColor {
+        switch self.stat {
+        case .hp:
+            return .green
+        case .speed:
+            return .purple
+        case .attack:
+            return .red
+        case .defense:
+            return .orange
+        case .specialDefense:
+            return .red.withAlphaComponent(0.8)
+        case .specialAttack:
+            return .orange.withAlphaComponent(0.8)
+        }
+    }
+    var title: String {
+        switch self.stat {
+        case .hp:
+            return "HP"
+        case .speed:
+            return "速度"
+        case .attack:
+            return "攻擊"
+        case .defense:
+            return "防禦"
+        case .specialDefense:
+            return "特防"
+        case .specialAttack:
+            return "特攻"
         }
     }
 }

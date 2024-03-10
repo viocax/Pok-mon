@@ -19,11 +19,11 @@ extension PokemonListViewModel {
     typealias Coordinator = CoordinatorProcotocol & PokemonListCoordinatorProcotocol
     struct Dependency {
         let service: NetworkService
-        let repository: RepositoryProtocol
+        let repository: FavoriteUseCase
         let coordinator: Coordinator
         init(
             service: NetworkService = APIService.share,
-            repository: RepositoryProtocol = UserDefaultWrapper(),
+            repository: FavoriteUseCase = UserDefaultWrapper.share,
             coordinator: Coordinator
         ) {
             self.service = service
@@ -34,6 +34,7 @@ extension PokemonListViewModel {
     struct Input {
         let clickFavorite: Driver<Void>
         let bindView: Driver<Void>
+        let viewWillAppear: Driver<Void>
         let loadMore: Driver<Bool>
         let clickCell: Driver<CellViewModel>
     }
@@ -48,8 +49,33 @@ extension PokemonListViewModel {
         let hudTracker = HUDTracker()
         let errorTracker = ErrorTracker()
 
+        var isFavorite = true
+        let isFavorteEvent = Driver
+            .merge(
+                input.bindView,
+                input.clickFavorite
+            ).map { _ -> Bool in
+                isFavorite.toggle()
+                return isFavorite
+            }
+
         let listsRelay = BehaviorRelay<[CellViewModel]>(value: [])
-        let list = listsRelay
+        let shareList = listsRelay.asDriver()
+        let viewWillAppear = input.viewWillAppear
+            .withLatestFrom(shareList)
+
+        let list = Driver
+            .merge(
+                shareList,
+                viewWillAppear,
+                isFavorteEvent.withLatestFrom(shareList)
+            )
+            .map { cells -> [CellViewModel] in
+                guard isFavorite else {
+                    return cells
+                }
+                return cells.filter { self.dependency.repository.isContain("\($0.number)") }
+            }
             .asDriver(onErrorDriveWith: .empty())
         let isEmpty = list.map(\.isEmpty)
             .distinctUntilChanged()
@@ -83,15 +109,7 @@ extension PokemonListViewModel {
                     .asDriver(onErrorDriveWith: .empty())
             }
 
-        var isFavorite = true
-        let isFavorteEvent = Driver
-            .merge(
-                input.bindView,
-                input.clickFavorite
-            ).map { _ -> Bool in
-                isFavorite.toggle()
-                return isFavorite
-            }
+
 
         let gotoDetailPage = input.clickCell
             .flatMap { cellViewModel in
@@ -103,10 +121,18 @@ extension PokemonListViewModel {
                     }
                     .asDriver(onErrorDriveWith: .empty())
             }
+
+        let alert = errorTracker
+            .flatMap { error in
+                return self.dependency.coordinator
+                    .showAlert(title: "Error ", message: error.localizedDescription)
+                    .asDriver(onErrorDriveWith: .empty())
+            }
         
         let configuration = Driver
             .merge(
                 fetchListEvent,
+                alert,
                 gotoDetailPage
             )
 
@@ -145,9 +171,7 @@ protocol SpeciesUpdatable: AnyObject {
     func updateDetailPage(response sepies: PokemonSpeciesResponse)
 }
 protocol PokemonShareData {
-
     func getPokemon() throws -> PokmonResponse
-    var number: Int { get }
     var spiecs: PokemonSpeciesResponse? { get }
 }
 
@@ -162,7 +186,7 @@ final class Coordinator: PokemonListViewModel.Coordinator {
         return .deferred {
             do {
                 let coordinator = Coordinator()
-                let viewModel = PokemonDeatilPageViewModel(dependency: .init(number: model.number, spiecs: model.spiecs, pokemon: try model.getPokemon(), coordinator: coordinator))
+                let viewModel = PokemonDeatilPageViewModel(dependency: .init(spiecs: model.spiecs, pokemon: try model.getPokemon(), coordinator: coordinator))
                 let vc = PokemonDeatilPageViewController(viewModel: viewModel)
                 coordinator.viewController = vc
                 self.viewController?.navigationController?.pushViewController(vc, animated: true)

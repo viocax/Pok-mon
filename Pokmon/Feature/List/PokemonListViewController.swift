@@ -68,12 +68,16 @@ extension PokemonListViewController {
         let bindViewRelay = PublishRelay<Void>()
         defer { bindViewRelay.accept(()) }
 
+        let viewWillAppear = rx.methodInvoked(#selector(UIViewController.viewWillAppear(_:)))
+            .map { _ in }
+            .asDriver(onErrorDriveWith: .empty())
         let tapCell = tableView.rx.modelSelected(CellViewModel.self)
             .asDriver()
         let input = PokemonListViewModel
             .Input(
                 clickFavorite: isFavoriteButton.rx.tap.asDriver(),
                 bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
+                viewWillAppear: viewWillAppear,
                 loadMore: loadMorePublisher.asDriver(onErrorDriveWith: .empty()),
                 clickCell: tapCell
             )

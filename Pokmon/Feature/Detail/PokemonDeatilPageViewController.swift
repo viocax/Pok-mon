@@ -13,6 +13,7 @@ final class PokemonDeatilPageViewController: UIViewController {
 
     private let tableView: UITableView = .init(frame: .zero, style: .insetGrouped)
     private let disposeBag: DisposeBag = .init()
+    private let favoriteRelay: PublishRelay<Int> = .init()
     private let subject: PublishRelay<PokemonSpeciesResponse?> = .init()
     public var newResponse: Observable<PokemonSpeciesResponse?> {
         let deinitVc = rx.deallocated
@@ -49,6 +50,7 @@ private extension PokemonDeatilPageViewController {
         tableView.backgroundColor = .white
         tableView.separatorStyle = .none
         tableView.register(.init(nibName: "PokemonDetailInfoCell", bundle: nil), forCellReuseIdentifier: "PokemonDetailInfoCell")
+        tableView.register(StatTableViewCell.self, forCellReuseIdentifier: "StatTableViewCell")
     }
     func setupLayout() {
         
@@ -64,22 +66,32 @@ private extension PokemonDeatilPageViewController {
     func bindView() {
         let bindViewRelay = PublishRelay<Void>()
         defer { bindViewRelay.accept(()) }
+
         let input = PokemonDeatilPageViewModel
-            .Input(bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()))
+            .Input(
+                bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
+                isFavorite: favoriteRelay.asDriver(onErrorDriveWith: .empty())
+            )
         let output = viewModel.transform(input)
         output.configuration
             .drive()
             .disposed(by: disposeBag)
         output.list
             .drive(tableView.rx.items) { tableView, row, model in
-                let cell = tableView.dequeueReusableCell(withIdentifier: "PokemonDetailInfoCell", for: .init(row: row, section: .zero))
                 switch model {
-                case let .info((pokemon, spiecs)):
-                    (cell as? PokemonDetailInfoCell)?.bindView(pokemon, species: spiecs)
+                case let .info(info):
+                    let cell = tableView.dequeueReusableCell(withIdentifier: "PokemonDetailInfoCell", for: .init(row: row, section: .zero))
+                    (cell as? PokemonDetailInfoCell)?.delegate = self
+                    (cell as? PokemonDetailInfoCell)?.bindView(info)
+                    return cell
+                case .stat(let pokemon):
+                    let cell = tableView.dequeueReusableCell(withIdentifier: "StatTableViewCell", for: .init(row: row, section: .zero))
+                    (cell as? StatTableViewCell)?.bindView(pokemon)
+                    return cell
                 default:
-                    break
+                    return UITableViewCell()
                 }
-                return cell
+
             }.disposed(by: disposeBag)
         output.isEmpty
             .drive(view.rx.isEmpty)
@@ -95,5 +107,11 @@ private extension PokemonDeatilPageViewController {
                 self?.title = title
             })
             .disposed(by: disposeBag)
+    }
+}
+
+extension PokemonDeatilPageViewController: PokemonDetailInfoCellDelegate {
+    func clickFavoriteSelected(_ id: Int) {
+        favoriteRelay.accept(id)
     }
 }

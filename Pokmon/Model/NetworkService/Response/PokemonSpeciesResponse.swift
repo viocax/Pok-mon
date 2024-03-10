@@ -39,7 +39,7 @@ extension PokemonSpeciesResponse: Codable {
         }
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Key.self)
-            self.text = try container.decode(String.self, forKey: .text)
+            self.text = try container.decode(String.self, forKey: .text).split(separator: "\n").joined(separator: " ")
             self.language = try container.decode(PokomBaseElementInfo.self, forKey: .language)
         }
     }

@@ -9,6 +9,10 @@ import UIKit
 import RxSwift
 import RxCocoa
 
+protocol PokemonDetailInfoCellDelegate: AnyObject {
+    func clickFavoriteSelected(_ id: Int)
+}
+
 class PokemonDetailInfoCell: UITableViewCell {
 
     @IBOutlet weak var pageControl: UIPageControl!
@@ -20,6 +24,8 @@ class PokemonDetailInfoCell: UITableViewCell {
     @IBOutlet weak var descriptionLabel: UILabel!
 
     private var disposeBag: DisposeBag = .init()
+
+    weak var delegate: PokemonDetailInfoCellDelegate?
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -38,11 +44,11 @@ class PokemonDetailInfoCell: UITableViewCell {
         contentView.backgroundColor = .white
         selectionStyle = .none
         pageControl.isHidden = true
-        nameLabel.font = .systemFont(ofSize: 18)
+        nameLabel.font = .systemFont(ofSize: 24)
         nameLabel.textColor = .black
-        subNameLabel.font = .systemFont(ofSize: 14)
+        subNameLabel.font = .systemFont(ofSize: 18)
         subNameLabel.textColor = .gray
-        descriptionLabel.font = .systemFont(ofSize: 14)
+        descriptionLabel.font = .systemFont(ofSize: 16)
         descriptionLabel.textColor = .black
         ImageCollectionViews.isPagingEnabled = true
         ImageCollectionViews.backgroundColor = .white
@@ -55,7 +61,10 @@ class PokemonDetailInfoCell: UITableViewCell {
         
     }
 
-    func bindView(_ pokemon: PokmonResponse, species: PokemonSpeciesResponse) {
+    func bindView(_ info: PokemonDeatilPageViewModel.Info) {
+        let pokemon = info.pokemon
+        let species = info.species
+
         nameLabel.text = species.names.first(where: { $0.isCN })?.name ?? pokemon.name
         subNameLabel.text = species.names.first(where: { $0.isEN })?.name ?? "-"
         let isCN = Locale.preferredLanguages.first?.contains("zh") ?? true
@@ -81,8 +90,19 @@ class PokemonDetailInfoCell: UITableViewCell {
             .disposed(by: disposeBag)
 
         Driver<[any TypeCornerProtocol]>.just(pokemon.types.map(\.type))
-            .drive(typesStackView.types)
+            .drive(onNext: { [weak self] types in
+                self?.typesStackView.types.onNext(types)
+                self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
+            })
             .disposed(by: disposeBag)
+        info.isFavorite
+            .subscribe(onNext: { [weak self] isFavorite in
+                self?.favoriteButton.setImage(isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"), for: .normal)
+            }).disposed(by: disposeBag)
+        favoriteButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                self?.delegate?.clickFavoriteSelected(pokemon.id)
+            }).disposed(by: disposeBag)
     }
 }
 
