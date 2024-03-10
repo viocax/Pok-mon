@@ -36,7 +36,16 @@ class PokemonListViewController: UIViewController {
 extension PokemonListViewController {
     func setupUIAttribute() {
         title = "Pokemon List"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        let apperance = UINavigationBarAppearance()
+        apperance.configureWithOpaqueBackground()
+        apperance.backgroundColor = .white
+        apperance.titleTextAttributes = [
+            .foregroundColor: UIColor.black,
+            .font: UIFont.systemFont(ofSize: 18)
+        ]
+        navigationController?.navigationBar.standardAppearance = apperance
+        navigationController?.navigationBar.scrollEdgeAppearance = apperance
+        navigationController?.navigationBar.compactAppearance = apperance
         isFavoriteButton.setImage(.init(systemName: "bookmark"), for: .normal)
         navigationItem.setLeftBarButton(.init(customView: isFavoriteButton), animated: false)
         view.backgroundColor = .white

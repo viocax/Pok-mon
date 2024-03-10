@@ -17,21 +17,21 @@ final class CellViewModel {
 
 extension CellViewModel {
     class Dependency {
-        let number: Int
+        var number: Int {
+            return source.number
+        }
         let service: NetworkService
         var sepies: PokemonSpeciesResponse?
         var pokemon: PokmonResponse?
         let source: PokemonListResponse.Item
         let repository: RepositoryProtocol
         init(
-            number: Int,
             sepies: PokemonSpeciesResponse? = nil,
             pokemon: PokmonResponse? = nil,
             source: PokemonListResponse.Item,
             service: NetworkService = APIService.share,
             repository: RepositoryProtocol = UserDefaultWrapper()
         ) {
-            self.number = number
             self.sepies = sepies
             self.pokemon = pokemon
             self.source = source
@@ -68,19 +68,6 @@ extension CellViewModel {
                 return .just(pokemon)
             }
 
-        let species = input.bindView
-            .flatMap { _ in
-                guard let species = self.dependency.sepies else {
-                    return self.dependency.service
-                        .request(PokemonSpeciesEndpoint(id: "\(number)"))
-                        .do(onNext: { response in
-                            self.dependency.sepies = response
-                        })
-                        .asDriver(onErrorDriveWith: .empty())
-                }
-                return .just(species)
-            }
-
         let getTypes = pokemon
             .map { response -> [any TypeCornerProtocol] in
                 return response.types.map(\.type)
@@ -106,5 +93,26 @@ extension CellViewModel {
             imageURL: pokemon.map(\.sprites.image),
             types: getTypes
         )
+    }
+}
+
+extension CellViewModel: SpeciesUpdatable {
+    func updateDetailPage(response sepies: PokemonSpeciesResponse) {
+        self.dependency.sepies = sepies
+    }
+}
+
+extension CellViewModel: PokemonShareData {
+    var number: Int {
+        return dependency.number
+    }
+    func getPokemon() throws -> PokmonResponse {
+        guard let pokemon = self.dependency.pokemon else {
+            throw PkError.pokemonDataNotYet
+        }
+        return pokemon
+    }
+    var spiecs: PokemonSpeciesResponse? {
+        return dependency.sepies
     }
 }

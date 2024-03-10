@@ -21,3 +21,8 @@ extension UIView {
         self.layer.removeAnimation(forKey: "rotationAnimation")
     }
 }
+
+extension UIImage {
+    static let placeHolder: UIImage? = UIImage(named: "pokeball")
+    static let errorImage: UIImage? = .init(named: "errorImage")
+}

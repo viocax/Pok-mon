@@ -22,6 +22,15 @@ extension PokmonResponse: Codable {
     struct Sprite: Codable {
         var image: String
         var female: String?
+        func getGenders() -> [(Gender, String)] {
+            if let female = female {
+                return [
+                    (.male, image),
+                    (.female, female)
+                ]
+            }
+            return [(.male, image)]
+        }
         enum Key: String, CodingKey {
             case image = "front_default"
             case female = "front_female"

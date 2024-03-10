@@ -18,8 +18,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
         self.window = .init(windowScene: scene)
-        let viewModel = PokemonListViewModel(dependency: .init())
-        self.window?.rootViewController = UINavigationController(rootViewController: PokemonListViewController(viewModel: viewModel))
+        let coordinator = Coordinator()
+        let viewModel = PokemonListViewModel(dependency: .init(coordinator: coordinator))
+        let viewController = PokemonListViewController(viewModel: viewModel)
+        coordinator.viewController = viewController
+        self.window?.rootViewController = UINavigationController(rootViewController: viewController)
         self.window?.makeKeyAndVisible()
     }
 

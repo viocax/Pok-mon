@@ -22,8 +22,6 @@ final class PokemonCell: UITableViewCell {
     private let typesStackView: UIStackView = .init()
     private var disposeBag: DisposeBag = .init()
     private let animation: UIViewPropertyAnimator = .init(duration: 0.3, curve: .linear)
-    static let placeHolder: UIImage? = UIImage(named: "pokeball")
-    static let errorImage: UIImage? = .init(named: "errorImage")
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -39,7 +37,7 @@ final class PokemonCell: UITableViewCell {
         super.prepareForReuse()
         disposeBag = .init()
         thumbNailImageView.kf.cancelDownloadTask()
-        thumbNailImageView.image = Self.placeHolder
+        thumbNailImageView.image = .placeHolder
     }
 
     func setupUIAttribute() {
@@ -59,7 +57,7 @@ final class PokemonCell: UITableViewCell {
         typesStackView.axis = .horizontal
         typesStackView.spacing = 8
         cornerView.layer.borderColor = UIColor.gray.cgColor
-        thumbNailImageView.image = Self.placeHolder
+        thumbNailImageView.image = .placeHolder
         thumbNailImageView.rotate()
     }
     func setupLayout() {
@@ -77,8 +75,8 @@ final class PokemonCell: UITableViewCell {
                 $0.translatesAutoresizingMaskIntoConstraints = false
             }
         NSLayoutConstraint.activate([
-            cornerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            cornerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
+            cornerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            cornerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
             cornerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             cornerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
 
@@ -135,7 +133,11 @@ final class PokemonCell: UITableViewCell {
             .drive(imageURL)
             .disposed(by: disposeBag)
         output.types
-            .drive(types)
+            .compactMap(\.first?.color.cgColor)
+            .drive(cornerView.layer.rx.borderColor)
+            .disposed(by: disposeBag)
+        output.types
+            .drive(typesStackView.types)
             .disposed(by: disposeBag)
         output.number
             .drive(numberLabel.rx.text)
@@ -155,11 +157,11 @@ final class PokemonCell: UITableViewCell {
     }
     var imageURL: Binder<String> {
         return Binder(self.thumbNailImageView) { image, urlString in
-            image.kf.setImage(with: URL(string: urlString), placeholder: Self.placeHolder, completionHandler: { result in
+            image.kf.setImage(with: URL(string: urlString), placeholder: UIImage.placeHolder, completionHandler: { result in
                 image.stopRotate()
                 switch result {
                 case .failure:
-                    image.image = Self.errorImage
+                    image.image = .errorImage
                 default:
                     break
                 }
@@ -190,11 +192,12 @@ final class PokemonCell: UITableViewCell {
             cell.setup(label: cell.widthLabel, title: "W: ", value: value, color: turple.1)
         }
     }
+}
+
+extension UIStackView {
     var types: Binder<[any TypeCornerProtocol]> {
-        return Binder(self) { cell, types in
+        return Binder(self) { stackView, types in
             // TODO: 優化
-            let stackView = cell.typesStackView
-            cell.cornerView.layer.borderColor = types.first?.color.cgColor
             stackView.arrangedSubviews.forEach {
                 $0.removeFromSuperview()
             }

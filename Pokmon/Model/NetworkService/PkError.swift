@@ -12,4 +12,5 @@ enum PkError: Error {
     case urlError(URLError)
     case afError(AFError)
     case unknown(Error)
+    case pokemonDataNotYet
 }
