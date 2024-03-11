@@ -18,16 +18,12 @@ final class PokemonListViewModel {
 extension PokemonListViewModel {
     typealias Coordinator = CoordinatorProcotocol & PokemonListCoordinatorProcotocol
     struct Dependency {
-        let service: NetworkService
-        let repository: FavoriteUseCase
+        @Injected(\.service.network) var service
+        @Injected(\.usecase.favorite) var favorite
         let coordinator: Coordinator
         init(
-            service: NetworkService = APIService.share,
-            repository: FavoriteUseCase = UserDefaultWrapper.share,
             coordinator: Coordinator
         ) {
-            self.service = service
-            self.repository = repository
             self.coordinator = coordinator
         }
     }
@@ -74,7 +70,7 @@ extension PokemonListViewModel {
                 guard isFavorite else {
                     return cells
                 }
-                return cells.filter { self.dependency.repository.isContain("\($0.number)") }
+                return cells.filter { self.dependency.favorite.isContain("\($0.number)") }
             }
             .asDriver(onErrorDriveWith: .empty())
         let isEmpty = list.map(\.isEmpty)

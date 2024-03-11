@@ -17,6 +17,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
+
+        // configuration
+        InjectObject.shared.configuration()
+
+        // setup rootWindow
         self.window = .init(windowScene: scene)
         let coordinator = Coordinator()
         let viewModel = PokemonListViewModel(dependency: .init(coordinator: coordinator))
@@ -41,7 +46,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
-        UserDefaults.standard.synchronize()
+        UserDefaultWrapper.share.synchronize()
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {

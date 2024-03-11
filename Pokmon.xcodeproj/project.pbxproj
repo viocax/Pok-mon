@@ -31,6 +31,7 @@
 		6445D8542B99C43D0028E2C1 /* PokmonUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6445D8532B99C43D0028E2C1 /* PokmonUITests.swift */; };
 		6445D8562B99C43D0028E2C1 /* PokmonUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6445D8552B99C43D0028E2C1 /* PokmonUITestsLaunchTests.swift */; };
 		64567A36596E0953B61E2E79 /* Pods_Pokmon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC9CE7631227BC66CD5B72D0 /* Pods_Pokmon.framework */; };
+		646DD1A02B9EA06900E03C3C /* InjectObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646DD19F2B9EA06900E03C3C /* InjectObject.swift */; };
 		64C766CB2B99C7D6001A7A70 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766CA2B99C7D6001A7A70 /* Endpoint.swift */; };
 		64C766CD2B99C7ED001A7A70 /* NetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766CC2B99C7ED001A7A70 /* NetworkService.swift */; };
 		64C766CF2B99C84C001A7A70 /* Encodable++Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C766CE2B99C84C001A7A70 /* Encodable++Extension.swift */; };
@@ -93,6 +94,7 @@
 		6445D84F2B99C43D0028E2C1 /* PokmonUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PokmonUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6445D8532B99C43D0028E2C1 /* PokmonUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokmonUITests.swift; sourceTree = "<group>"; };
 		6445D8552B99C43D0028E2C1 /* PokmonUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokmonUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		646DD19F2B9EA06900E03C3C /* InjectObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectObject.swift; sourceTree = "<group>"; };
 		64C766CA2B99C7D6001A7A70 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
 		64C766CC2B99C7ED001A7A70 /* NetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkService.swift; sourceTree = "<group>"; };
 		64C766CE2B99C84C001A7A70 /* Encodable++Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Encodable++Extension.swift"; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 				64C766C92B99C7BF001A7A70 /* NetworkService */,
 				0D35313E2B9C454100A995DE /* HUDTracker.swift */,
 				0D3531402B9C455E00A995DE /* ErrorTracker.swift */,
+				646DD19F2B9EA06900E03C3C /* InjectObject.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -609,6 +612,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0D3531472B9C619500A995DE /* FavoriteUseCase.swift in Sources */,
+				646DD1A02B9EA06900E03C3C /* InjectObject.swift in Sources */,
 				0DD0AB3D2B9DE849001A77EE /* PokemonDeatilPageViewModel.swift in Sources */,
 				0D35313F2B9C454100A995DE /* HUDTracker.swift in Sources */,
 				64C766D42B99CA54001A7A70 /* PokemonListEndpont.swift in Sources */,

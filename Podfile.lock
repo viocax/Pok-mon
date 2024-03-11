@@ -11,6 +11,7 @@ PODS:
   - RxSwift (6.6.0)
   - RxTest (6.6.0):
     - RxSwift (= 6.6.0)
+  - Swinject (2.8.3)
 
 DEPENDENCIES:
   - Alamofire
@@ -19,6 +20,7 @@ DEPENDENCIES:
   - RxCocoa (= 6.6.0)
   - RxSwift (= 6.6.0)
   - RxTest (= 6.6.0)
+  - Swinject
 
 SPEC REPOS:
   trunk:
@@ -29,6 +31,7 @@ SPEC REPOS:
     - RxRelay
     - RxSwift
     - RxTest
+    - Swinject
 
 SPEC CHECKSUMS:
   Alamofire: 3ca42e259043ee0dc5c0cdd76c4bc568b8e42af7
@@ -38,7 +41,8 @@ SPEC CHECKSUMS:
   RxRelay: 45eaa5db8ee4fb50e5ebd57deec0159e97fa51e6
   RxSwift: a4b44f7d24599f674deebd1818eab82e58410632
   RxTest: a23f26bb53a5e146a0a69db4f0fa0b69001ce7f4
+  Swinject: 893c9a543000ac2f10ee4cbaf0933c6992c935d5
 
-PODFILE CHECKSUM: 405741c1a2e4259b76ca99998bba2d925af3797a
+PODFILE CHECKSUM: 989261d9b55200990dcc9424e9139c28e15ffbc6
 
 COCOAPODS: 1.14.3

@@ -20,23 +20,18 @@ extension CellViewModel {
         var number: Int {
             return source.number
         }
-        let service: NetworkService
         var sepies: PokemonSpeciesResponse?
         var pokemon: PokmonResponse?
         let source: PokemonListResponse.Item
-        let repository: FavoriteUseCase
+        @Injected(\.service.network) var service
         init(
             sepies: PokemonSpeciesResponse? = nil,
             pokemon: PokmonResponse? = nil,
-            source: PokemonListResponse.Item,
-            service: NetworkService = APIService.share,
-            repository: FavoriteUseCase = UserDefaultWrapper.share
+            source: PokemonListResponse.Item
         ) {
             self.sepies = sepies
             self.pokemon = pokemon
             self.source = source
-            self.service = service
-            self.repository = repository
         }
     }
     struct Input {

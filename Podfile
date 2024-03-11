@@ -11,6 +11,7 @@ target 'Pokmon' do
   pod 'RxCocoa', '6.6.0'
   pod 'Alamofire'
   pod 'Kingfisher'
+  pod 'Swinject'
  
   target 'PokmonTests' do
     inherit! :search_paths

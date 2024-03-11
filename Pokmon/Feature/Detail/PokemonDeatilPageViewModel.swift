@@ -23,20 +23,16 @@ extension PokemonDeatilPageViewModel {
         let pokemon: PokmonResponse
         var spiecs: PokemonSpeciesResponse?
         let coordinator: CoordinatorProcotocol
-        let service: NetworkService
-        let favoriteUseCase: FavoriteUseCase
+        @Injected(\.service.network) var service
+        @Injected(\.usecase.favorite) var favorite
         init(
             spiecs: PokemonSpeciesResponse? = nil,
             pokemon: PokmonResponse,
-            coordinator: CoordinatorProcotocol,
-            service: NetworkService = APIService.share,
-            favorite: FavoriteUseCase = UserDefaultWrapper.share
+            coordinator: CoordinatorProcotocol
         ) {
             self.spiecs = spiecs
             self.pokemon = pokemon
             self.coordinator = coordinator
-            self.service = service
-            self.favoriteUseCase = favorite
         }
     }
     struct Info {
@@ -71,15 +67,15 @@ extension PokemonDeatilPageViewModel {
         let number = self.dependency.number
         
 
-        let isFavoriteState = BehaviorRelay<Bool>(value: self.dependency.favoriteUseCase.isContain("\(number)"))
+        let isFavoriteState = BehaviorRelay<Bool>(value: self.dependency.favorite.isContain("\(number)"))
 
         let recodeTapIsFavorite = input.isFavorite
             .map { newIndex in
-                let isContain = self.dependency.favoriteUseCase.isContain("\(newIndex)")
+                let isContain = self.dependency.favorite.isContain("\(newIndex)")
                 if isContain {
-                    self.dependency.favoriteUseCase.remove("\(newIndex)")
+                    self.dependency.favorite.remove("\(newIndex)")
                 } else {
-                    self.dependency.favoriteUseCase.insert("\(newIndex)")
+                    self.dependency.favorite.insert("\(newIndex)")
                 }
                 return isFavoriteState.accept(!isContain)
             }
