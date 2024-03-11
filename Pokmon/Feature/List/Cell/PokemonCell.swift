@@ -11,30 +11,6 @@ import RxCocoa
 import Kingfisher
 
 final class PokemonCell: UICollectionViewCell {
-    
-    class CornerGradientView: UIView {
-        fileprivate let gradientLayer: CAGradientLayer = .init()
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            setup()
-            
-        }
-        
-        required init?(coder: NSCoder) {
-            super.init(coder: coder)
-            setup()
-        }
-        func setup() {
-            gradientLayer.startPoint = .init(x: 0, y: 0)
-            gradientLayer.endPoint = .init(x: 1, y: 1)
-            gradientLayer.cornerRadius = 8
-            layer.insertSublayer(gradientLayer, at: .zero)
-        }
-        override func layoutSubviews() {
-            super.layoutSubviews()
-            gradientLayer.frame = bounds
-        }
-    }
 
     private let cornerView: CornerGradientView = .init()
     private let thumbNailImageView: UIImageView = .init()
@@ -59,6 +35,56 @@ final class PokemonCell: UICollectionViewCell {
         disposeBag = .init()
         thumbNailImageView.kf.cancelDownloadTask()
         thumbNailImageView.image = .placeHolder
+    }
+
+    func bindView(_ viewModel: CellViewModel) {
+        let bindViewRelay = PublishRelay<Void>()
+        defer { bindViewRelay.accept(()) }
+        let input = CellViewModel
+            .Input(
+                bindView: bindViewRelay.asDriver(onErrorDriveWith: .never())
+            )
+        let output = viewModel.transform(input)
+        output.name
+            .drive(nameLabel.rx.text)
+            .disposed(by: disposeBag)
+        output.imageURL
+            .drive(imageURL)
+            .disposed(by: disposeBag)
+        output.types
+            .compactMap(\.first?.color.cgColor)
+            .drive(cornerView.layer.rx.borderColor)
+            .disposed(by: disposeBag)
+        output.types
+            .drive(onNext: { [weak self] types in
+                self?.typesStackView.types.onNext(types)
+                self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
+                self?.cornerView.gradientLayer.colors = [
+                    types.first?.color.cgColor ?? UIColor.white.cgColor,
+                    UIColor.white.cgColor
+                ]
+            })
+            .disposed(by: disposeBag)
+        output.number
+            .drive(numberLabel.rx.text)
+            .disposed(by: disposeBag)
+    }
+}
+
+// MARK: private
+private extension PokemonCell {
+    var imageURL: Binder<String> {
+        return Binder(self.thumbNailImageView) { image, urlString in
+            image.kf.setImage(with: URL(string: urlString), placeholder: UIImage.placeHolder, completionHandler: { result in
+                image.stopRotate()
+                switch result {
+                case .failure:
+                    image.image = .errorImage
+                default:
+                    break
+                }
+            })
+        }
     }
     func setupUIAttribute() {
         cornerView.layer.cornerRadius = 8
@@ -117,64 +143,27 @@ final class PokemonCell: UICollectionViewCell {
         nameLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         nameLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
-    func bindView(_ viewModel: CellViewModel) {
-        let bindViewRelay = PublishRelay<Void>()
-        defer { bindViewRelay.accept(()) }
-        let input = CellViewModel
-            .Input(
-                bindView: bindViewRelay.asDriver(onErrorDriveWith: .never())
-            )
-        let output = viewModel.transform(input)
-        output.name
-            .drive(nameLabel.rx.text)
-            .disposed(by: disposeBag)
-        output.imageURL
-            .drive(imageURL)
-            .disposed(by: disposeBag)
-        output.types
-            .compactMap(\.first?.color.cgColor)
-            .drive(cornerView.layer.rx.borderColor)
-            .disposed(by: disposeBag)
-        output.types
-            .drive(onNext: { [weak self] types in
-                self?.typesStackView.types.onNext(types)
-                self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
-                self?.cornerView.gradientLayer.colors = [
-                    types.first?.color.cgColor ?? UIColor.white.cgColor,
-                    UIColor.white.cgColor
-                ]
-            })
-            .disposed(by: disposeBag)
-        output.number
-            .drive(numberLabel.rx.text)
-            .disposed(by: disposeBag)
-    }
-    var imageURL: Binder<String> {
-        return Binder(self.thumbNailImageView) { image, urlString in
-            image.kf.setImage(with: URL(string: urlString), placeholder: UIImage.placeHolder, completionHandler: { result in
-                image.stopRotate()
-                switch result {
-                case .failure:
-                    image.image = .errorImage
-                default:
-                    break
-                }
-            })
+    class CornerGradientView: UIView {
+        fileprivate let gradientLayer: CAGradientLayer = .init()
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            setup()
+            
         }
-    }
-}
-
-extension UIStackView {
-    var types: Binder<[any TypeCornerProtocol]> {
-        return Binder(self) { stackView, types in
-            // TODO: 優化
-            stackView.arrangedSubviews.forEach {
-                $0.removeFromSuperview()
-            }
-            types.map(TypeCornerButton.init)
-                .forEach { button in
-                    stackView.addArrangedSubview(button)
-                }
+        
+        required init?(coder: NSCoder) {
+            super.init(coder: coder)
+            setup()
+        }
+        func setup() {
+            gradientLayer.startPoint = .init(x: 0, y: 0)
+            gradientLayer.endPoint = .init(x: 1, y: 1)
+            gradientLayer.cornerRadius = 8
+            layer.insertSublayer(gradientLayer, at: .zero)
+        }
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            gradientLayer.frame = bounds
         }
     }
 }
