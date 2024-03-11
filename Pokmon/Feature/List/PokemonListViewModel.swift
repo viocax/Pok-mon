@@ -28,6 +28,7 @@ extension PokemonListViewModel {
         }
     }
     struct Input {
+        let changeLayout: Driver<Void>
         let clickFavorite: Driver<Void>
         let bindView: Driver<Void>
         let viewWillAppear: Driver<Void>
@@ -35,6 +36,7 @@ extension PokemonListViewModel {
         let clickCell: Driver<CellViewModel>
     }
     struct Output {
+        let isListOrGrid: Driver<Bool>
         let isFavorite: Driver<Bool>
         let isLoading: Driver<Bool>
         let isEmpty: Driver<Bool>
@@ -44,6 +46,18 @@ extension PokemonListViewModel {
     func transform(_ input: Input) -> Output {
         let hudTracker = HUDTracker()
         let errorTracker = ErrorTracker()
+
+        var isListOrGrid = true
+        let changeLayout = input.changeLayout
+            .map { _ in
+                isListOrGrid.toggle()
+                return isListOrGrid
+            }
+        let isListOrGridOutput = Driver
+            .merge(
+                changeLayout,
+                .just(isListOrGrid)
+            )
 
         var isFavorite = true
         let isFavorteEvent = Driver
@@ -133,6 +147,7 @@ extension PokemonListViewModel {
             )
 
         return .init(
+            isListOrGrid: isListOrGridOutput,
             isFavorite: isFavorteEvent,
             isLoading: hudTracker.asDriver(),
             isEmpty: isEmpty,

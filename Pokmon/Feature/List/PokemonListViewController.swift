@@ -11,11 +11,14 @@ import RxCocoa
 
 class PokemonListViewController: UIViewController {
 
-    private let tableView: UITableView = .init(frame: .zero, style: .insetGrouped)
+    private let listFlowLayout: ListFlowLayout = .init()
+    private let gridFlowLayout: GridFlowLayout = .init()
+    private lazy var collectionView: UICollectionView = .init(frame: .zero, collectionViewLayout: listFlowLayout)
     private let loadMorePublisher: PublishRelay<Bool> = .init()
     private let disposeBag = DisposeBag()
     private let viewModel: PokemonListViewModel
     private let isFavoriteButton: UIButton = .init()
+    private let changeLayoutButton: UIButton = .init()
     init(viewModel: PokemonListViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
@@ -47,21 +50,22 @@ extension PokemonListViewController {
         navigationController?.navigationBar.scrollEdgeAppearance = apperance
         navigationController?.navigationBar.compactAppearance = apperance
         isFavoriteButton.setImage(.init(systemName: "bookmark"), for: .normal)
+        changeLayoutButton.titleLabel?.font = .systemFont(ofSize: 14)
+        changeLayoutButton.setTitleColor(.black, for: .normal)
         navigationItem.setLeftBarButton(.init(customView: isFavoriteButton), animated: false)
+        navigationItem.setRightBarButton(.init(customView: changeLayoutButton), animated: false)
         view.backgroundColor = .white
-        tableView.separatorStyle = .none
-        tableView.estimatedRowHeight = 80
-        tableView.register(PokemonCell.self, forCellReuseIdentifier: "PokemonCell")
-        tableView.backgroundColor = .white
+        collectionView.register(PokemonCell.self, forCellWithReuseIdentifier: "PokemonCell")
+        collectionView.backgroundColor = .white
     }
     func setupLayout() {
-        view.addSubview(tableView)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(collectionView)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
         ])
     }
     func bindView() {
@@ -71,10 +75,11 @@ extension PokemonListViewController {
         let viewWillAppear = rx.methodInvoked(#selector(UIViewController.viewWillAppear(_:)))
             .map { _ in }
             .asDriver(onErrorDriveWith: .empty())
-        let tapCell = tableView.rx.modelSelected(CellViewModel.self)
+        let tapCell = collectionView.rx.modelSelected(CellViewModel.self)
             .asDriver()
         let input = PokemonListViewModel
             .Input(
+                changeLayout: changeLayoutButton.rx.tap.asDriver(),
                 clickFavorite: isFavoriteButton.rx.tap.asDriver(),
                 bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
                 viewWillAppear: viewWillAppear,
@@ -95,13 +100,25 @@ extension PokemonListViewController {
             .drive(view.rx.indicatorAnimator)
             .disposed(by: disposeBag)
         output.list
-            .drive(tableView.rx.items) { tableView, row, model in
-                let cell = tableView.dequeueReusableCell(withIdentifier: "PokemonCell", for: .init(row: row, section: .zero))
+            .drive(collectionView.rx.items) { collection, row, model in
+                let cell = collection.dequeueReusableCell(withReuseIdentifier: "PokemonCell", for: .init(item: row, section: .zero))
                 (cell as? PokemonCell)?.bindView(model)
                 return cell
             }.disposed(by: disposeBag)
-        tableView.rx.setDelegate(self)
+        output.isListOrGrid//.map(!)
+            .drive(isList)
             .disposed(by: disposeBag)
+        collectionView.rx.setDelegate(self)
+            .disposed(by: disposeBag)
+    }
+    var isList: Binder<Bool> {
+        return .init(self) { vc, isListOrGrid in
+            vc.changeLayoutButton.setTitle(isListOrGrid ? "List" : "Grid", for: .normal)
+            let newLayout = isListOrGrid ? vc.listFlowLayout : vc.gridFlowLayout
+            if newLayout != vc.collectionView.collectionViewLayout {
+                vc.collectionView.setCollectionViewLayout(newLayout, animated: true)
+            }
+        }
     }
     var isFavorite: Binder<Bool> {
         return Binder(self.isFavoriteButton) { button, isFavorite in
@@ -122,5 +139,35 @@ extension PokemonListViewController: UIScrollViewDelegate {
     }
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         detectScrollToBottomEdge(scrollView)
+    }
+}
+
+extension PokemonListViewController {
+    class ListFlowLayout: UICollectionViewFlowLayout {
+        override init() {
+            super.init()
+            minimumLineSpacing = 8
+            minimumInteritemSpacing = 8
+            let length = (UIScreen.main.bounds.width - 48)
+            itemSize = .init(width: length, height: 104)
+        }
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+    }
+    class GridFlowLayout: UICollectionViewFlowLayout {
+        override init() {
+            super.init()
+            sectionInset = .init(top: 8, left: 8, bottom: 8, right: 8)
+            minimumLineSpacing = 8
+            minimumInteritemSpacing = 8
+
+            let length = (UIScreen.main.bounds.width - 24) / 2
+           
+            itemSize = .init(width: length, height: length)
+        }
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
     }
 }

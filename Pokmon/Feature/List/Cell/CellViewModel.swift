@@ -40,8 +40,6 @@ extension CellViewModel {
     struct Output {
         let number: Driver<String>
         let name: Driver<String>
-        let height: Driver<Int>
-        let width: Driver<Int>
         let imageURL: Driver<String>
         let types: Driver<[TypeCornerProtocol]>
     }
@@ -83,8 +81,6 @@ extension CellViewModel {
         return .init(
             number: numberOutput,
             name:  name,
-            height: pokemon.map(\.height),
-            width: pokemon.map(\.weight),
             imageURL: pokemon.map(\.sprites.thumbnail),
             types: getTypes
         )
