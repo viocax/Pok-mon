@@ -105,7 +105,7 @@ extension PokemonListViewController {
                 (cell as? PokemonCell)?.bindView(model)
                 return cell
             }.disposed(by: disposeBag)
-        output.isListOrGrid//.map(!)
+        output.isListOrGrid
             .drive(isList)
             .disposed(by: disposeBag)
         collectionView.rx.setDelegate(self)
