@@ -51,13 +51,12 @@ private extension StatTableViewCell {
             titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            titleLabel.heightAnchor.constraint(equalToConstant: 28),
             stackView.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             stackView.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-            stackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            stackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
             sumLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             sumLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-            sumLabel.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 8),
+            sumLabel.topAnchor.constraint(equalTo: stackView.bottomAnchor),
             sumLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
         ])
     }
@@ -65,13 +64,11 @@ private extension StatTableViewCell {
 
 extension StatTableViewCell {
     func bindView(_ model: PokmonResponse) {
-        if model.stats.count != 6 { fatalError("unexpect") }
+        assert(model.stats.count == 6, "check data, pokemon stats")
         let isAddNewView = stackView.arrangedSubviews.isEmpty
         if isAddNewView {
             model.stats.forEach { stat in
                 let statView = StatView()
-                statView.translatesAutoresizingMaskIntoConstraints = false
-                statView.heightAnchor.constraint(equalToConstant: stackView.intrinsicContentSize.height).isActive = true
                 statView.setStat(stat)
                 stackView.addArrangedSubview(statView)
             }

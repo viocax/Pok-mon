@@ -50,6 +50,8 @@ private extension PokemonDeatilPageViewController {
         tableView.backgroundColor = .white
         tableView.separatorStyle = .none
         tableView.register(.init(nibName: "PokemonDetailInfoCell", bundle: nil), forCellReuseIdentifier: "PokemonDetailInfoCell")
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 250
         tableView.register(StatTableViewCell.self, forCellReuseIdentifier: "StatTableViewCell")
     }
     func setupLayout() {

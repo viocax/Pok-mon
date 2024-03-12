@@ -16,6 +16,8 @@ protocol PokemonDetailInfoCellDelegate: AnyObject {
 class PokemonDetailInfoCell: UITableViewCell {
 
     @IBOutlet weak var pageControl: UIPageControl!
+    @IBOutlet weak var heightLabel: UILabel!
+    @IBOutlet weak var weightLabel: UILabel!
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var subNameLabel: UILabel!
     @IBOutlet weak var typesStackView: UIStackView!
@@ -67,6 +69,8 @@ class PokemonDetailInfoCell: UITableViewCell {
 
         nameLabel.text = species.names.first(where: { $0.isCN })?.name ?? pokemon.name
         subNameLabel.text = species.names.first(where: { $0.isEN })?.name ?? "-"
+        heightLabel.setUp(title: "H: ", value: "\(Double(pokemon.height) / 10) m", color: pokemon.types.first?.type.color)
+        weightLabel.setUp(title: "W: ", value: "\(Double(pokemon.weight) / 10) kg", color: pokemon.types.first?.type.color)
         let isCN = Locale.preferredLanguages.first?.contains("zh") ?? true
         descriptionLabel.text = species.flavorEntitys.first(where: { isCN ? $0.isCN : $0.isEN })?.text
 
@@ -111,5 +115,20 @@ extension PokemonDetailInfoCell: UICollectionViewDelegate {
         guard scrollView.bounds.width > .zero, pageControl.isHidden == false else { return }
         let page = scrollView.contentOffset.x / scrollView.bounds.width
         pageControl.currentPage = Int(page)
+    }
+}
+
+extension UILabel {
+    func setUp(title: String, value: String, color: UIColor?) {
+        var content = AttributedString()
+        var title = AttributedString(title)
+        title.font = .systemFont(ofSize: 14)
+        title.foregroundColor = UIColor.black
+        content += title
+        var message = AttributedString(value)
+        message.font = .systemFont(ofSize: 12)
+        message.foregroundColor = color ?? UIColor.gray
+        content += message
+        self.attributedText = .init(content)
     }
 }

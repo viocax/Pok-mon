@@ -53,7 +53,6 @@ private extension StatView {
             titleLabel.topAnchor.constraint(equalTo: topAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
             titleLabel.widthAnchor.constraint(equalToConstant: 40),
-            titleLabel.heightAnchor.constraint(equalToConstant: labelHeight),
             
             valueLabel.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
             valueLabel.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 12),
