@@ -25,7 +25,6 @@ final class UserDefaultWrapper: FavoriteUseCase {
         self.userDefault = userDefault
         self.key = key
         self.collection = Set(userDefault.stringArray(forKey: key) ?? [])
-        print("Test: \(self.collection)")
     }
     var isEmpty: Bool {
         return collection.isEmpty
