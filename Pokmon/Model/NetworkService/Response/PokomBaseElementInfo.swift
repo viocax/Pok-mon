@@ -7,7 +7,7 @@
 
 import UIKit
 
-struct PokomBaseElementInfo: Codable {
+struct PokomBaseElementInfo: Codable, Hashable {
     var name: String
     var url: String
 }

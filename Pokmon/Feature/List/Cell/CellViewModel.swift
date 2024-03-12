@@ -93,7 +93,11 @@ extension CellViewModel: SpeciesUpdatable {
     }
 }
 
-extension CellViewModel: PokemonShareData {
+extension CellViewModel: PokemonShareData, Equatable {
+    static func == (lhs: CellViewModel, rhs: CellViewModel) -> Bool {
+        return lhs.dependency.number == rhs.dependency.number
+    }
+    
     var number: Int {
         return dependency.number
     }

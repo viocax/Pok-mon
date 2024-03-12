@@ -69,10 +69,14 @@ private extension PokemonDeatilPageViewController {
         let bindViewRelay = PublishRelay<Void>()
         defer { bindViewRelay.accept(()) }
 
+        let viewWillDisappear = rx.methodInvoked(#selector(UIViewController.viewWillDisappear(_:)))
+            .map { _ in }
+            .asDriver(onErrorDriveWith: .never())
         let input = PokemonDeatilPageViewModel
             .Input(
                 bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
-                isFavorite: favoriteRelay.asDriver(onErrorDriveWith: .empty())
+                isFavorite: favoriteRelay.asDriver(onErrorDriveWith: .empty()),
+                viewWillDisappear: viewWillDisappear
             )
         let output = viewModel.transform(input)
         output.configuration

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PokemonSpeciesResponse {
+struct PokemonSpeciesResponse: Hashable {
     var color: PokomBaseElementInfo
     var flavorEntitys: [FlavorTextEntity]
     var names: [Names]
@@ -26,11 +26,11 @@ extension PokemonSpeciesResponse: Codable {
         case flavor = "flavor_text_entries"
         case names
     }
-    struct Names: Codable, LanguageModel {
+    struct Names: Codable, LanguageModel, Hashable {
         var language: PokomBaseElementInfo
         var name: String
     }
-    struct FlavorTextEntity: Codable, LanguageModel {
+    struct FlavorTextEntity: Codable, LanguageModel, Hashable {
         var text: String
         var language: PokomBaseElementInfo
         enum Key: String, CodingKey {

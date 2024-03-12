@@ -26,6 +26,9 @@ final class InjectObject {
         self.container.register(NetworkService.self) { _ in
             return APIService.share
         }.inObjectScope(.container)
+        self.container.register(ListUsecase.self) { _ in
+            return ListUseCaseImp()
+        }.inObjectScope(.container)
     }
     struct Usecase {
         fileprivate var container: Container
@@ -42,6 +45,9 @@ final class InjectObject {
 }
 extension InjectObject.Usecase {
     var favorite: FavoriteUseCase {
+        return container.synchronize().resolveService()
+    }
+    var list: ListUsecase {
         return container.synchronize().resolveService()
     }
 }

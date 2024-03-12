@@ -26,7 +26,7 @@ extension PokemonDeatilPageViewModel {
         @Injected(\.service.network) var service
         @Injected(\.usecase.favorite) var favorite
         init(
-            spiecs: PokemonSpeciesResponse? = nil,
+            spiecs: PokemonSpeciesResponse?,
             pokemon: PokmonResponse,
             coordinator: CoordinatorProcotocol
         ) {
@@ -52,6 +52,7 @@ extension PokemonDeatilPageViewModel {
     struct Input {
         let bindView: Driver<Void>
         let isFavorite: Driver<Int>
+        let viewWillDisappear: Driver<Void>
     }
     struct Output {
         let title: Driver<String>
@@ -81,6 +82,7 @@ extension PokemonDeatilPageViewModel {
             }
 
         let retry = errorTracker
+            .asDriver()
             .flatMap { error in
                 return self.dependency.coordinator
                     .showAlert(title: "Error and Retry", message: error.localizedDescription)
@@ -118,9 +120,13 @@ extension PokemonDeatilPageViewModel {
                 "No.\(number)"
             }
 
+        let syncDataWhenDisAppear = input.viewWillDisappear
+            .map(dependency.favorite.synchronize)
+
         let configuration = Driver
             .merge(
-                recodeTapIsFavorite
+                recodeTapIsFavorite,
+                syncDataWhenDisAppear
             )
 
         return .init(

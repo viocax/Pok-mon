@@ -49,9 +49,22 @@ extension PokmonResponse: Codable {
             self.thumbnail = try container.decode(String.self, forKey: .thumbnail)
             self.other = try container.decode(Ohter.self, forKey: .other)
         }
+        #if DEBUG
+        init(thumbnail: String) {
+            self.thumbnail = thumbnail
+            self.other = .init()
+        }
+        #endif
+
         private struct Ohter: Codable {
             var home: Info
             var officialArtwork: Info
+            #if DEBUG
+            init() {
+                self.home = .init(front_default: "TestHome", front_female: "TestHomeFemale")
+                self.officialArtwork = .init(front_default: "TestOF", front_female: "TestOFFemale")
+            }
+            #endif
             enum OtherKeys: String, CodingKey {
                 case home
                 case officialArtwork = "official-artwork"

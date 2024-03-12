@@ -77,13 +77,16 @@ extension PokemonListViewController {
             .asDriver(onErrorDriveWith: .empty())
         let tapCell = collectionView.rx.modelSelected(CellViewModel.self)
             .asDriver()
+        let loadMore = loadMorePublisher.distinctUntilChanged()
+            .compactMap { $0 ? () : nil }
+            .asDriver(onErrorDriveWith: .empty())
         let input = PokemonListViewModel
             .Input(
                 changeLayout: changeLayoutButton.rx.tap.asDriver(),
                 clickFavorite: isFavoriteButton.rx.tap.asDriver(),
                 bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
                 viewWillAppear: viewWillAppear,
-                loadMore: loadMorePublisher.asDriver(onErrorDriveWith: .empty()),
+                loadMore: loadMore,
                 clickCell: tapCell
             )
         let output = viewModel.transform(input)

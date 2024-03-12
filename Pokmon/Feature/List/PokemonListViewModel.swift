@@ -20,6 +20,7 @@ extension PokemonListViewModel {
     struct Dependency {
         @Injected(\.service.network) var service
         @Injected(\.usecase.favorite) var favorite
+        @Injected(\.usecase.list) var list
         let coordinator: Coordinator
         init(
             coordinator: Coordinator
@@ -32,7 +33,7 @@ extension PokemonListViewModel {
         let clickFavorite: Driver<Void>
         let bindView: Driver<Void>
         let viewWillAppear: Driver<Void>
-        let loadMore: Driver<Bool>
+        let loadMore: Driver<Void>
         let clickCell: Driver<CellViewModel>
     }
     struct Output {
@@ -56,7 +57,7 @@ extension PokemonListViewModel {
         let isListOrGridOutput = Driver
             .merge(
                 changeLayout,
-                .just(isListOrGrid)
+                input.bindView.map { isListOrGrid }
             )
 
         var isFavorite = true
@@ -93,9 +94,7 @@ extension PokemonListViewModel {
         var currentOffset: Int? = 0
         func reciveResponse(_ response: PokemonListResponse) {
             if let offset = response.offset {
-                let cell = response.results.map { item in
-                    CellViewModel(dependency: .init(source: item))
-                }
+                let cell = self.dependency.list.listConvertCell(response.results)
                 currentOffset = offset
                 listsRelay.accept(listsRelay.value + cell)
             } else {
@@ -103,11 +102,9 @@ extension PokemonListViewModel {
             }
         }
 
-        let loadMore = input.loadMore
-            .compactMap { $0 ? () : nil }
         let fetchListEvent = Driver
             .merge(
-                loadMore,
+                input.loadMore,
                 input.bindView
             ).compactMap { currentOffset }
             .flatMapLatest { offset in
@@ -156,4 +153,3 @@ extension PokemonListViewModel {
         )
     }
 }
-
