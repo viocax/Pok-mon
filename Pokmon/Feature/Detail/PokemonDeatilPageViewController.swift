@@ -41,6 +41,9 @@ final class PokemonDeatilPageViewController: UIViewController {
         setupLayout()
         bindView()
     }
+    deinit {
+        print("PokemonDeatilPageViewController is deinit")
+    }
 }
 
 // MARK: - private
@@ -83,7 +86,7 @@ private extension PokemonDeatilPageViewController {
             .drive()
             .disposed(by: disposeBag)
         output.list
-            .drive(tableView.rx.items) { tableView, row, model in
+            .drive(tableView.rx.items) { [weak self] tableView, row, model in
                 switch model {
                 case let .info(info):
                     let cell = tableView.dequeueReusableCell(withIdentifier: "PokemonDetailInfoCell", for: .init(row: row, section: .zero))
@@ -106,7 +109,9 @@ private extension PokemonDeatilPageViewController {
             .drive(view.rx.indicatorAnimator)
             .disposed(by: disposeBag)
         output.spiecs
-            .drive(onNext: subject.accept(_:))
+            .drive(onNext: { [weak self] spiecs in
+                self?.subject.accept(spiecs)
+            })
             .disposed(by: disposeBag)
         output.title
             .drive(onNext: { [weak self] title in

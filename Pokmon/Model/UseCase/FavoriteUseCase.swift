@@ -24,6 +24,8 @@ final class UserDefaultWrapper: FavoriteUseCase {
     init(userDefault: UserDefaults = .standard, key: String = "com.drake.faviorite") {
         self.userDefault = userDefault
         self.key = key
+        self.collection = Set(userDefault.stringArray(forKey: key) ?? [])
+        print("Test: \(self.collection)")
     }
     var isEmpty: Bool {
         return collection.isEmpty
