@@ -7,8 +7,6 @@
 
 import Combine
 import UIKit
-import RxSwift
-import RxCocoa
 
 protocol PokemonDetailInfoCellDelegate: AnyObject {
     func clickFavoriteSelected(_ id: Int)
@@ -26,26 +24,35 @@ class PokemonDetailInfoCell: UITableViewCell {
     @IBOutlet weak var ImageCollectionViews: UICollectionView!
     @IBOutlet weak var descriptionLabel: UILabel!
 
-    private var disposeBag: DisposeBag = .init()
     private var cancellables: Set<AnyCancellable> = .init()
+    private var pokemonID: Int?
+    private lazy var genderDataSource = makeGenderDataSource()
 
     weak var delegate: PokemonDetailInfoCellDelegate?
 
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        // Initialization code
-        setupUIAttributes()
-        
-    }
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        disposeBag = .init()
-        cancellables = .init()
+    fileprivate enum Section {
+        case main
     }
 
-    
+    struct GenderItem: Hashable {
+        let gender: Gender
+        let url: String
+    }
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupUIAttributes()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        cancellables = .init()
+        pokemonID = nil
+        pageControl.currentPage = .zero
+        ImageCollectionViews.setContentOffset(.zero, animated: false)
+    }
+
     func setupUIAttributes() {
-        
         contentView.backgroundColor = .white
         selectionStyle = .none
         pageControl.isHidden = true
@@ -57,18 +64,28 @@ class PokemonDetailInfoCell: UITableViewCell {
         descriptionLabel.textColor = .black
         ImageCollectionViews.isPagingEnabled = true
         ImageCollectionViews.backgroundColor = .white
-        ImageCollectionViews.register(UINib(nibName: "GenderImageCollectionCell", bundle: nil), forCellWithReuseIdentifier: "GenderImageCollectionCell")
+        ImageCollectionViews.delegate = self
         let flowlayout = ImageCollectionViews.collectionViewLayout as? UICollectionViewFlowLayout
         flowlayout?.itemSize = .init(width: 116, height: 116)
         flowlayout?.minimumLineSpacing = .zero
         flowlayout?.minimumInteritemSpacing = .zero
         flowlayout?.scrollDirection = .horizontal
-        
+
+        // action 只掛一次。放進 bindView 的話每次 dequeue 都會多疊一個,
+        // prepareForReuse 也清不掉(它只管得到 cancellables)。
+        favoriteButton.addAction(
+            .init { [weak self] _ in
+                guard let id = self?.pokemonID else { return }
+                self?.delegate?.clickFavoriteSelected(id)
+            },
+            for: .touchUpInside
+        )
     }
 
     func bindView(_ info: PokemonDetailStore.Info) {
         let pokemon = info.pokemon
         let species = info.species
+        pokemonID = pokemon.id
 
         nameLabel.text = species.names.first(where: { $0.isCN })?.name ?? pokemon.name
         subNameLabel.text = species.names.first(where: { $0.isEN })?.name ?? "-"
@@ -77,42 +94,48 @@ class PokemonDetailInfoCell: UITableViewCell {
         let isCN = Locale.preferredLanguages.first?.contains("zh") ?? true
         descriptionLabel.text = species.flavorEntitys.first(where: { isCN ? $0.isCN : $0.isEN })?.text
 
-        ImageCollectionViews.rx.setDelegate(self)
-            .disposed(by: disposeBag)
-        pageControl.currentPageIndicatorTintColor = pokemon.types.first?.type.color
-        let genders = Driver.just(pokemon.sprites.getGenders())
-        
-        genders
-            .drive(ImageCollectionViews.rx.items) { collection, row, model in
-                let cell = collection.dequeueReusableCell(withReuseIdentifier: "GenderImageCollectionCell", for: .init(row: row, section: .zero))
-                (cell as? GenderImageCollectionCell)?.bindView(model.0, url: model.1)
-                return cell
-            }
-            .disposed(by: disposeBag)
-        genders.map { $0.count < 2 }
-            .drive(pageControl.rx.isHidden)
-            .disposed(by: disposeBag)
-        genders.map(\.count)
-            .drive(pageControl.rx.numberOfPages)
-            .disposed(by: disposeBag)
+        let types: [any TypeCornerProtocol] = pokemon.types.map(\.type)
+        typesStackView.setTypes(types)
+        typesStackView.insertArrangedSubview(.init(), at: .zero)
 
-        Driver<[any TypeCornerProtocol]>.just(pokemon.types.map(\.type))
-            .drive(onNext: { [weak self] types in
-                self?.typesStackView.types.onNext(types)
-                self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
-            })
-            .disposed(by: disposeBag)
+        let genders = pokemon.sprites.getGenders().map { GenderItem(gender: $0.0, url: $0.1) }
+        pageControl.currentPageIndicatorTintColor = pokemon.types.first?.type.color
+        pageControl.isHidden = genders.count < 2
+        pageControl.numberOfPages = genders.count
+        apply(genders)
+
         info.isFavorite
             .sink { [weak self] isFavorite in
                 self?.favoriteButton.setImage(isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"), for: .normal)
             }
             .store(in: &cancellables)
-        favoriteButton.addAction(
-            .init { [weak self] _ in self?.delegate?.clickFavoriteSelected(pokemon.id) },
-            for: .touchUpInside
-        )
     }
 }
+
+// MARK: - private
+
+private extension PokemonDetailInfoCell {
+
+    func makeGenderDataSource() -> UICollectionViewDiffableDataSource<Section, GenderItem> {
+        let registration = UICollectionView.CellRegistration<GenderImageCollectionCell, GenderItem>(
+            cellNib: .init(nibName: "GenderImageCollectionCell", bundle: nil)
+        ) { cell, _, item in
+            cell.bindView(item.gender, url: item.url)
+        }
+        return .init(collectionView: ImageCollectionViews) { collectionView, indexPath, item in
+            collectionView.dequeueConfiguredReusableCell(using: registration, for: indexPath, item: item)
+        }
+    }
+
+    func apply(_ genders: [GenderItem]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, GenderItem>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(genders, toSection: .main)
+        genderDataSource.apply(snapshot, animatingDifferences: false)
+    }
+}
+
+// MARK: - UICollectionViewDelegate
 
 extension PokemonDetailInfoCell: UICollectionViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {

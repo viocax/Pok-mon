@@ -57,7 +57,7 @@ final class PokemonCell: UICollectionViewCell {
             .disposed(by: disposeBag)
         output.types
             .drive(onNext: { [weak self] types in
-                self?.typesStackView.types.onNext(types)
+                self?.typesStackView.setTypes(types)
                 self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
                 self?.cornerView.gradientLayer.colors = [
                     types.first?.color.cgColor ?? UIColor.white.cgColor,
