@@ -30,16 +30,12 @@ extension CoordinatorProcotocol {
 }
 
 protocol PokemonListCoordinatorProcotocol {
-    func showDetailPage(model: PokemonShareData) -> Observable<PokemonSpeciesResponse?>
-
-    /// Concurrency 版。標 @MainActor 是因為裡面要推 view controller ——
-    /// 舊的 Observable 版把 push 藏在 `.deferred` 裡,編譯器看不出這個限制,
-    /// 只是靠呼叫端剛好在主執行緒訂閱才對的。
+    /// 標 @MainActor 是因為裡面要推 view controller,讓它變成編譯期保證
     @MainActor
     func showDetailPage(model: PokemonShareData) async -> PokemonSpeciesResponse?
 }
 
-final class Coordinator: PokemonListViewModel.Coordinator {
+final class Coordinator: PokemonListStore.Coordinator {
 
     weak var viewController: UIViewController?
 
@@ -57,21 +53,5 @@ final class Coordinator: PokemonListViewModel.Coordinator {
 
         // Detail 頁內部還是 Rx,只在這個邊界橋接一次
         return await detailViewController.newResponse.firstValue() ?? nil
-    }
-
-    func showDetailPage(model: PokemonShareData) -> Observable<PokemonSpeciesResponse?> {
-        return .deferred {
-            do {
-                let coordinator = Coordinator()
-                let viewModel = PokemonDeatilPageViewModel(dependency: .init(spiecs: model.spiecs, pokemon: try model.getPokemon(), coordinator: coordinator))
-                let vc = PokemonDeatilPageViewController(viewModel: viewModel)
-                coordinator.viewController = vc
-                self.viewController?.navigationController?.pushViewController(vc, animated: true)
-                return vc.newResponse
-            } catch {
-                return .error(error)
-            }
-            
-        }
     }
 }

@@ -34,4 +34,4 @@ extension APIService: InjectObjectTestable { }
 extension UserDefaultWrapper: InjectObjectTestable { }
 extension CellViewModel.Dependency: InjectObjectTestable { }
 extension PokemonDeatilPageViewModel.Dependency: InjectObjectTestable { }
-extension PokemonListViewModel.Dependency: InjectObjectTestable { }
+extension PokemonListStore.Dependency: InjectObjectTestable { }

@@ -2,43 +2,69 @@
 //  PokemonListViewController.swift
 //  Pokmon
 //
-//  Created by drake on 2024/3/7.
+//  Created by drake on 2026/8/21.
+//
+//  Spike:PokemonListViewController 的 Concurrency 版。
+//  UI 佈局照抄舊檔案,差別在資料流 — 用 Combine 訂閱 store.$viewState、
+//  事件用 store.send(.xxx) 送回去,清單改用 diffable data source + snapshot。
+//  Cell 內部維持 Rx,驗證新舊共存。
 //
 
-import UIKit
-import RxSwift
+import Combine
 import RxCocoa
+import UIKit
 
-class PokemonListViewController: UIViewController {
+final class PokemonListViewController: UIViewController {
 
-    private let listFlowLayout: ListFlowLayout = .init()
-    private let gridFlowLayout: GridFlowLayout = .init()
+    // MARK: - Properties
+
+    private let store: PokemonListStore
+    private var cancellables: Set<AnyCancellable> = .init()
+
+    private let listFlowLayout: PokemonListViewController.ListFlowLayout = .init()
+    private let gridFlowLayout: PokemonListViewController.GridFlowLayout = .init()
     private lazy var collectionView: UICollectionView = .init(frame: .zero, collectionViewLayout: listFlowLayout)
-    private let loadMorePublisher: PublishRelay<Bool> = .init()
-    private let disposeBag = DisposeBag()
-    private let viewModel: PokemonListViewModel
     private let isFavoriteButton: UIButton = .init()
     private let changeLayoutButton: UIButton = .init()
-    init(viewModel: PokemonListViewModel) {
-        self.viewModel = viewModel
+
+    private lazy var dataSource = makeDataSource()
+    private var isScrollToBottom = false
+
+    fileprivate enum Section {
+        case main
+    }
+
+    // MARK: - Life cycle
+
+    init(store: PokemonListStore) {
+        self.store = store
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUIAttribute()
         setupLayout()
-        bindView()
+        bindStore()
+        store.send(.onAppear)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        store.send(.viewWillAppear)
     }
 }
 
-extension PokemonListViewController {
+// MARK: - Setup
+
+private extension PokemonListViewController {
+
     func setupUIAttribute() {
-        title = "Pokemon List"
+        title = "Pokemon List (async)"
         let apperance = UINavigationBarAppearance()
         apperance.configureWithOpaqueBackground()
         apperance.backgroundColor = .white
@@ -49,15 +75,26 @@ extension PokemonListViewController {
         navigationController?.navigationBar.standardAppearance = apperance
         navigationController?.navigationBar.scrollEdgeAppearance = apperance
         navigationController?.navigationBar.compactAppearance = apperance
+
         isFavoriteButton.setImage(.init(systemName: "bookmark"), for: .normal)
+        isFavoriteButton.addAction(
+            .init { [weak self] _ in self?.store.send(.tapFavorite) },
+            for: .touchUpInside
+        )
         changeLayoutButton.titleLabel?.font = .systemFont(ofSize: 14)
         changeLayoutButton.setTitleColor(.black, for: .normal)
+        changeLayoutButton.addAction(
+            .init { [weak self] _ in self?.store.send(.tapChangeLayout) },
+            for: .touchUpInside
+        )
         navigationItem.setLeftBarButton(.init(customView: isFavoriteButton), animated: false)
         navigationItem.setRightBarButton(.init(customView: changeLayoutButton), animated: false)
+
         view.backgroundColor = .white
-        collectionView.register(PokemonCell.self, forCellWithReuseIdentifier: "PokemonCell")
         collectionView.backgroundColor = .white
+        collectionView.delegate = self
     }
+
     func setupLayout() {
         view.addSubview(collectionView)
         collectionView.translatesAutoresizingMaskIntoConstraints = false
@@ -68,78 +105,108 @@ extension PokemonListViewController {
             collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
         ])
     }
-    func bindView() {
-        let bindViewRelay = PublishRelay<Void>()
-        defer { bindViewRelay.accept(()) }
 
-        let viewWillAppear = rx.methodInvoked(#selector(UIViewController.viewWillAppear(_:)))
-            .map { _ in }
-            .asDriver(onErrorDriveWith: .empty())
-        let tapCell = collectionView.rx.modelSelected(CellViewModel.self)
-            .asDriver()
-        let loadMore = loadMorePublisher.distinctUntilChanged()
-            .compactMap { $0 ? () : nil }
-            .asDriver(onErrorDriveWith: .empty())
-        let input = PokemonListViewModel
-            .Input(
-                changeLayout: changeLayoutButton.rx.tap.asDriver(),
-                clickFavorite: isFavoriteButton.rx.tap.asDriver(),
-                bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
-                viewWillAppear: viewWillAppear,
-                loadMore: loadMore,
-                clickCell: tapCell
-            )
-        let output = viewModel.transform(input)
-        output.configuration
-            .drive()
-            .disposed(by: disposeBag)
-        output.isEmpty
-            .drive(view.rx.isEmpty)
-            .disposed(by: disposeBag)
-        output.isFavorite
-            .drive(isFavorite)
-            .disposed(by: disposeBag)
-        output.isLoading
-            .drive(view.rx.indicatorAnimator)
-            .disposed(by: disposeBag)
-        output.list
-            .drive(collectionView.rx.items) { collection, row, model in
-                let cell = collection.dequeueReusableCell(withReuseIdentifier: "PokemonCell", for: .init(item: row, section: .zero))
-                (cell as? PokemonCell)?.bindView(model)
-                return cell
-            }.disposed(by: disposeBag)
-        output.isListOrGrid
-            .drive(isList)
-            .disposed(by: disposeBag)
-        collectionView.rx.setDelegate(self)
-            .disposed(by: disposeBag)
-    }
-    var isList: Binder<Bool> {
-        return .init(self) { vc, isListOrGrid in
-            vc.changeLayoutButton.setTitle(isListOrGrid ? "List" : "Grid", for: .normal)
-            let newLayout = isListOrGrid ? vc.listFlowLayout : vc.gridFlowLayout
-            if newLayout != vc.collectionView.collectionViewLayout {
-                vc.collectionView.setCollectionViewLayout(newLayout, animated: true)
+    /// 舊版是六條 Driver 各自 drive;現在是一條 State 用 map + removeDuplicates 拆成六條。
+    func bindStore() {
+        let state = store.$viewState
+
+        state
+            .map(\.isListLayout)
+            .removeDuplicates()
+            .sink { [weak self] in self?.applyLayout(isList: $0) }
+            .store(in: &cancellables)
+
+        state
+            .map(\.isFavoriteFilterOn)
+            .removeDuplicates()
+            .sink { [weak self] isOn in
+                self?.isFavoriteButton.setImage(.init(systemName: isOn ? "bookmark.fill" : "bookmark"), for: .normal)
             }
+            .store(in: &cancellables)
+
+        state
+            .map(\.isLoading)
+            .removeDuplicates()
+            .sink { [weak self] isLoading in
+                // 既有的 Rx Binder 可以直接當 ObserverType 用,不用為了搬家重寫 UI 程式
+                guard let self else { return }
+                self.view.rx.indicatorAnimator.on(.next(isLoading))
+            }
+            .store(in: &cancellables)
+
+        state
+            .map(\.isEmpty)
+            .removeDuplicates()
+            .sink { [weak self] isEmpty in
+                guard let self else { return }
+                self.view.rx.isEmpty.on(.next(isEmpty))
+            }
+            .store(in: &cancellables)
+
+        state
+            .map(\.displayCells)
+            .removeDuplicates()
+            .sink { [weak self] cells in self?.apply(cells) }
+            .store(in: &cancellables)
+
+        state
+            .compactMap(\.alert)
+            .removeDuplicates()
+            .sink { [weak self] alert in
+                self?.presentAlert(alert) { [weak self] in self?.store.send(.dismissAlert) }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// CellRegistration 會自己處理 register,不用再 `collectionView.register(_:forCellWithReuseIdentifier:)`
+    func makeDataSource() -> UICollectionViewDiffableDataSource<Section, CellViewModel> {
+        let registration = UICollectionView.CellRegistration<PokemonCell, CellViewModel> { cell, _, model in
+            cell.bindView(model)
+        }
+        return .init(collectionView: collectionView) { collectionView, indexPath, model in
+            collectionView.dequeueConfiguredReusableCell(using: registration, for: indexPath, item: model)
         }
     }
-    var isFavorite: Binder<Bool> {
-        return Binder(self.isFavoriteButton) { button, isFavorite in
-            let string = isFavorite ? "bookmark.fill" : "bookmark"
-            button.setImage(.init(systemName: string), for: .normal)
+
+    func apply(_ cells: [CellViewModel]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, CellViewModel>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(cells, toSection: .main)
+        dataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    func applyLayout(isList: Bool) {
+        changeLayoutButton.setTitle(isList ? "List" : "Grid", for: .normal)
+        let newLayout = isList ? listFlowLayout : gridFlowLayout
+        if newLayout != collectionView.collectionViewLayout {
+            collectionView.setCollectionViewLayout(newLayout, animated: true)
         }
     }
 }
 
-// MARK: UIScrollViewDelegate
-extension PokemonListViewController: UIScrollViewDelegate {
-    private func detectScrollToBottomEdge(_ scrollView: UIScrollView) {
-        let isScrollToBottom = scrollView.contentOffset.y + scrollView.frame.size.height >= scrollView.contentSize.height
-        loadMorePublisher.accept(isScrollToBottom)
+// MARK: - UICollectionViewDelegate
+
+extension PokemonListViewController: UICollectionViewDelegate {
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let model = dataSource.itemIdentifier(for: indexPath) else { return }
+        store.send(.tapCell(model))
     }
+
+    private func detectScrollToBottomEdge(_ scrollView: UIScrollView) {
+        let isBottom = scrollView.contentOffset.y + scrollView.frame.size.height >= scrollView.contentSize.height
+        // 取代 distinctUntilChanged:只有從「不在底部」變成「在底部」才觸發
+        guard isBottom != isScrollToBottom else { return }
+        isScrollToBottom = isBottom
+        if isBottom {
+            store.send(.loadMore)
+        }
+    }
+
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         detectScrollToBottomEdge(scrollView)
     }
+
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         detectScrollToBottomEdge(scrollView)
     }

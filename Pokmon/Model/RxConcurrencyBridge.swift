@@ -4,8 +4,9 @@
 //
 //  Created by drake on 2026/8/21.
 //
-//  Spike: Rx 與 Swift Concurrency 共存期間的橋接工具。
-//  遷移完成後這個檔案應該整包刪掉。
+//  Rx 與 Swift Concurrency 的邊界轉接。
+//  用在「還沒搬過去的 Rx 介面」與「async 呼叫端」交界的那一層,
+//  不要散在 store / view model 裡面。
 //
 
 import RxSwift

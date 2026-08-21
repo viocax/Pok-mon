@@ -11,10 +11,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-    /// Spike 開關:true 走 Concurrency 版的 List(PokemonListStore + PokemonListViewControllerV2),
-    /// false 走原本的 RxSwift 版。驗證完連同 Spike 資料夾一起刪掉。
-    static let useConcurrencySpike = true
-
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -28,14 +24,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // setup rootWindow
         self.window = .init(windowScene: scene)
         let coordinator = Coordinator()
-        let viewController: UIViewController
-        if Self.useConcurrencySpike {
-            let store = PokemonListStore(dependency: .init(coordinator: coordinator))
-            viewController = PokemonListViewControllerV2(store: store)
-        } else {
-            let viewModel = PokemonListViewModel(dependency: .init(coordinator: coordinator))
-            viewController = PokemonListViewController(viewModel: viewModel)
-        }
+        let store = PokemonListStore(dependency: .init(coordinator: coordinator))
+        let viewController = PokemonListViewController(store: store)
         coordinator.viewController = viewController
         self.window?.rootViewController = UINavigationController(rootViewController: viewController)
         self.window?.makeKeyAndVisible()
