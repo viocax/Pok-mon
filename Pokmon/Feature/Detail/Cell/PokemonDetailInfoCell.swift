@@ -5,6 +5,7 @@
 //  Created by Jie liang Huang on 2024/3/10.
 //
 
+import Combine
 import UIKit
 import RxSwift
 import RxCocoa
@@ -26,6 +27,7 @@ class PokemonDetailInfoCell: UITableViewCell {
     @IBOutlet weak var descriptionLabel: UILabel!
 
     private var disposeBag: DisposeBag = .init()
+    private var cancellables: Set<AnyCancellable> = .init()
 
     weak var delegate: PokemonDetailInfoCellDelegate?
 
@@ -38,6 +40,7 @@ class PokemonDetailInfoCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         disposeBag = .init()
+        cancellables = .init()
     }
 
     
@@ -63,7 +66,7 @@ class PokemonDetailInfoCell: UITableViewCell {
         
     }
 
-    func bindView(_ info: PokemonDeatilPageViewModel.Info) {
+    func bindView(_ info: PokemonDetailStore.Info) {
         let pokemon = info.pokemon
         let species = info.species
 
@@ -99,14 +102,16 @@ class PokemonDetailInfoCell: UITableViewCell {
                 self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
             })
             .disposed(by: disposeBag)
+        // 收藏狀態由 store 推過來,只更新這顆星星,不用重建整個 cell
         info.isFavorite
-            .subscribe(onNext: { [weak self] isFavorite in
+            .sink { [weak self] isFavorite in
                 self?.favoriteButton.setImage(isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"), for: .normal)
-            }).disposed(by: disposeBag)
-        favoriteButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                self?.delegate?.clickFavoriteSelected(pokemon.id)
-            }).disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
+        favoriteButton.addAction(
+            .init { [weak self] _ in self?.delegate?.clickFavoriteSelected(pokemon.id) },
+            for: .touchUpInside
+        )
     }
 }
 

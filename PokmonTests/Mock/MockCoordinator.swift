@@ -7,7 +7,6 @@
 
 import Foundation
 import UIKit
-import RxSwift
 @testable import Pokmon
 
 class MockCoordinator: CoordinatorProcotocol, PokemonListCoordinatorProcotocol {
@@ -19,10 +18,5 @@ class MockCoordinator: CoordinatorProcotocol, PokemonListCoordinatorProcotocol {
     @MainActor
     func showDetailPage(model: Pokmon.PokemonShareData) async -> Pokmon.PokemonSpeciesResponse? {
         return injectShowDetailPageAsync
-    }
-
-    var injectShowAlert: Observable<Void> = .empty()
-    func showAlert(title: String, message: String) -> Observable<Void> {
-        return injectShowAlert
     }
 }

@@ -18,7 +18,6 @@
 		0DD0AB2B2B9D74F6001A77EE /* PokemonSpeciesResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0AB2A2B9D74F6001A77EE /* PokemonSpeciesResponse.swift */; };
 		0DD0AB362B9D78BC001A77EE /* GenderImageCollectionCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0DD0AB352B9D78BC001A77EE /* GenderImageCollectionCell.xib */; };
 		0DD0AB372B9D78BC001A77EE /* GenderImageCollectionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0AB342B9D78BC001A77EE /* GenderImageCollectionCell.swift */; };
-		0DD0AB3D2B9DE849001A77EE /* PokemonDeatilPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0AB3C2B9DE849001A77EE /* PokemonDeatilPageViewModel.swift */; };
 		0DD0AB432B9E1049001A77EE /* StatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0AB422B9E1049001A77EE /* StatView.swift */; };
 		0DD0AB452B9E1B42001A77EE /* StatTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0AB442B9E1B42001A77EE /* StatTableViewCell.swift */; };
 		277680186F638C522BF9D1D2 /* Pods_PokmonTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9322E6B65FC4845E4844177B /* Pods_PokmonTests.framework */; };
@@ -59,13 +58,12 @@
 		64C7816D2BA0333E00254A6F /* MockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C7816C2BA0333E00254A6F /* MockService.swift */; };
 		64C7816F2BA0334B00254A6F /* MockFavoriteUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C7816E2BA0334B00254A6F /* MockFavoriteUseCase.swift */; };
 		64C781722BA0344800254A6F /* InjectObjectTestable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C781712BA0344800254A6F /* InjectObjectTestable.swift */; };
-		64C781762BA0357C00254A6F /* PokemonDeatilPageViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C781752BA0357C00254A6F /* PokemonDeatilPageViewModelTests.swift */; };
 		64C781782BA035B200254A6F /* UserDefaultWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C781772BA035B200254A6F /* UserDefaultWrapperTests.swift */; };
 		64C7817A2BA061FD00254A6F /* ListUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C781792BA061FD00254A6F /* ListUseCase.swift */; };
 		64C7817C2BA062E300254A6F /* MockListUSeCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C7817B2BA062E300254A6F /* MockListUSeCase.swift */; };
 		842C184E3179084DCE9C0924 /* UIViewController++Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F947C971126586BF2007D45 /* UIViewController++Extension.swift */; };
 		9D86336F2F789F06D1EA27E2 /* PokemonListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A99B84ADEEFFF54559A6C0B /* PokemonListViewController.swift */; };
-		CE870D9F781D15F9F7775D25 /* RxConcurrencyBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B7EF0560A641D8B4D1582B /* RxConcurrencyBridge.swift */; };
+		B63CF0571010C840730A4627 /* PokemonDetailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9962F7E20605159135136D54 /* PokemonDetailStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,7 +94,6 @@
 		0DD0AB2A2B9D74F6001A77EE /* PokemonSpeciesResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonSpeciesResponse.swift; sourceTree = "<group>"; };
 		0DD0AB342B9D78BC001A77EE /* GenderImageCollectionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenderImageCollectionCell.swift; sourceTree = "<group>"; };
 		0DD0AB352B9D78BC001A77EE /* GenderImageCollectionCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = GenderImageCollectionCell.xib; sourceTree = "<group>"; };
-		0DD0AB3C2B9DE849001A77EE /* PokemonDeatilPageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonDeatilPageViewModel.swift; sourceTree = "<group>"; };
 		0DD0AB422B9E1049001A77EE /* StatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatView.swift; sourceTree = "<group>"; };
 		0DD0AB442B9E1B42001A77EE /* StatTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatTableViewCell.swift; sourceTree = "<group>"; };
 		1955795A053470F9D62CF080 /* PokemonListStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PokemonListStore.swift; sourceTree = "<group>"; };
@@ -139,7 +136,6 @@
 		64C7816C2BA0333E00254A6F /* MockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockService.swift; sourceTree = "<group>"; };
 		64C7816E2BA0334B00254A6F /* MockFavoriteUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFavoriteUseCase.swift; sourceTree = "<group>"; };
 		64C781712BA0344800254A6F /* InjectObjectTestable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectObjectTestable.swift; sourceTree = "<group>"; };
-		64C781752BA0357C00254A6F /* PokemonDeatilPageViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonDeatilPageViewModelTests.swift; sourceTree = "<group>"; };
 		64C781772BA035B200254A6F /* UserDefaultWrapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultWrapperTests.swift; sourceTree = "<group>"; };
 		64C781792BA061FD00254A6F /* ListUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListUseCase.swift; sourceTree = "<group>"; };
 		64C7817B2BA062E300254A6F /* MockListUSeCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockListUSeCase.swift; sourceTree = "<group>"; };
@@ -147,8 +143,8 @@
 		70A26F37C95A81FB93451C9B /* Pods-Pokmon.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokmon.debug.xcconfig"; path = "Target Support Files/Pods-Pokmon/Pods-Pokmon.debug.xcconfig"; sourceTree = "<group>"; };
 		8A2B226E49A9FE525BAC5696 /* Pods-PokmonTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PokmonTests.debug.xcconfig"; path = "Target Support Files/Pods-PokmonTests/Pods-PokmonTests.debug.xcconfig"; sourceTree = "<group>"; };
 		8E10D9AAEC1959DA0D16D5D3 /* Pods-Pokmon-PokmonUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokmon-PokmonUITests.debug.xcconfig"; path = "Target Support Files/Pods-Pokmon-PokmonUITests/Pods-Pokmon-PokmonUITests.debug.xcconfig"; sourceTree = "<group>"; };
-		90B7EF0560A641D8B4D1582B /* RxConcurrencyBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RxConcurrencyBridge.swift; sourceTree = "<group>"; };
 		9322E6B65FC4845E4844177B /* Pods_PokmonTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PokmonTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9962F7E20605159135136D54 /* PokemonDetailStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PokemonDetailStore.swift; sourceTree = "<group>"; };
 		A4BEFFE5D619E4F9FCA980F9 /* Pods_Pokmon_PokmonUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Pokmon_PokmonUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC9CE7631227BC66CD5B72D0 /* Pods_Pokmon.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Pokmon.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BC5FDD4056F58C5EA580AEF9 /* Pods-Pokmon.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pokmon.release.xcconfig"; path = "Target Support Files/Pods-Pokmon/Pods-Pokmon.release.xcconfig"; sourceTree = "<group>"; };
@@ -209,7 +205,6 @@
 				6484A4442B9F12A2004C5E65 /* PokemonShareData.swift */,
 				56C6D1D86DE593B87385EC2A /* AlertState.swift */,
 				E2FEE8FE2A2463658BB2B74F /* TaskStore.swift */,
-				90B7EF0560A641D8B4D1582B /* RxConcurrencyBridge.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -239,7 +234,7 @@
 			children = (
 				0DD0AB3A2B9DE827001A77EE /* Cell */,
 				0D35313B2B9C42AE00A995DE /* PokemonDeatilPageViewController.swift */,
-				0DD0AB3C2B9DE849001A77EE /* PokemonDeatilPageViewModel.swift */,
+				9962F7E20605159135136D54 /* PokemonDetailStore.swift */,
 			);
 			path = Detail;
 			sourceTree = "<group>";
@@ -318,7 +313,6 @@
 			children = (
 				64C781702BA0335200254A6F /* Mock */,
 				64C781682BA0330100254A6F /* CellViewModelTests.swift */,
-				64C781752BA0357C00254A6F /* PokemonDeatilPageViewModelTests.swift */,
 				64C781772BA035B200254A6F /* UserDefaultWrapperTests.swift */,
 			);
 			path = PokmonTests;
@@ -684,7 +678,6 @@
 			files = (
 				0D3531472B9C619500A995DE /* FavoriteUseCase.swift in Sources */,
 				646DD1A02B9EA06900E03C3C /* InjectObject.swift in Sources */,
-				0DD0AB3D2B9DE849001A77EE /* PokemonDeatilPageViewModel.swift in Sources */,
 				0D35313F2B9C454100A995DE /* HUDTracker.swift in Sources */,
 				64C766D42B99CA54001A7A70 /* PokemonListEndpont.swift in Sources */,
 				64C766E02B9AE5A0001A7A70 /* UIColor++Extension.swift in Sources */,
@@ -723,7 +716,7 @@
 				4B718BC8BF7477CA12645EC4 /* TaskStore.swift in Sources */,
 				5644D0350994FF59F232EBDF /* CellViewModel+Hashable.swift in Sources */,
 				842C184E3179084DCE9C0924 /* UIViewController++Extension.swift in Sources */,
-				CE870D9F781D15F9F7775D25 /* RxConcurrencyBridge.swift in Sources */,
+				B63CF0571010C840730A4627 /* PokemonDetailStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -733,7 +726,6 @@
 			files = (
 				64C781782BA035B200254A6F /* UserDefaultWrapperTests.swift in Sources */,
 				64C781692BA0330100254A6F /* CellViewModelTests.swift in Sources */,
-				64C781762BA0357C00254A6F /* PokemonDeatilPageViewModelTests.swift in Sources */,
 				64C7816B2BA0332E00254A6F /* MockCoordinator.swift in Sources */,
 				64C7817C2BA062E300254A6F /* MockListUSeCase.swift in Sources */,
 				64C781722BA0344800254A6F /* InjectObjectTestable.swift in Sources */,

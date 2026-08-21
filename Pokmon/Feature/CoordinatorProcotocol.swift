@@ -6,27 +6,9 @@
 //
 
 import UIKit
-import RxSwift
 
 protocol CoordinatorProcotocol {
     var viewController: UIViewController? { get }
-    func showAlert(title: String, message: String) -> Observable<Void>
-}
-extension CoordinatorProcotocol {
-    func showAlert(title: String, message: String) -> Observable<Void> {
-        return .create { subscriber in
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            let okAction = UIAlertAction(title: "ok", style: .default) { _ in
-                subscriber.onNext(())
-                subscriber.onCompleted()
-            }
-            alert.addAction(okAction)
-            self.viewController?.present(alert, animated: true)
-            return Disposables.create([
-                alert.rx.deallocated.subscribe(subscriber)
-            ])
-        }
-    }
 }
 
 protocol PokemonListCoordinatorProcotocol {
@@ -43,15 +25,13 @@ final class Coordinator: PokemonListStore.Coordinator {
     func showDetailPage(model: PokemonShareData) async -> PokemonSpeciesResponse? {
         guard let pokemon = try? model.getPokemon() else { return nil }
 
-        let child = Coordinator()
-        let viewModel = PokemonDeatilPageViewModel(
-            dependency: .init(spiecs: model.spiecs, pokemon: pokemon, coordinator: child)
-        )
-        let detailViewController = PokemonDeatilPageViewController(viewModel: viewModel)
-        child.viewController = detailViewController
-        viewController?.navigationController?.pushViewController(detailViewController, animated: true)
+        let store = PokemonDetailStore(dependency: .init(spiecs: model.spiecs, pokemon: pokemon))
+        let detailViewController = PokemonDeatilPageViewController(store: store)
 
-        // Detail 頁內部還是 Rx,只在這個邊界橋接一次
-        return await detailViewController.newResponse.firstValue() ?? nil
+        // 等到使用者離開 Detail 頁才回傳 —— onFinish 保證只會被呼叫一次
+        return await withCheckedContinuation { continuation in
+            detailViewController.onFinish = { continuation.resume(returning: $0) }
+            viewController?.navigationController?.pushViewController(detailViewController, animated: true)
+        }
     }
 }

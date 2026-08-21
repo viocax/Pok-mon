@@ -5,49 +5,105 @@
 //  Created by Jie liang Huang on 2024/3/9.
 //
 
-import UIKit
-import RxSwift
+import Combine
 import RxCocoa
+import UIKit
 
 final class PokemonDeatilPageViewController: UIViewController {
 
+    // MARK: - Properties
+
+    /// 離開這頁時把最新的 species 交還給推它的人。只會被呼叫一次。
+    var onFinish: ((PokemonSpeciesResponse?) -> Void)?
+
+    private let store: PokemonDetailStore
+    private var cancellables: Set<AnyCancellable> = .init()
     private let tableView: UITableView = .init(frame: .zero, style: .insetGrouped)
-    private let disposeBag: DisposeBag = .init()
-    private let favoriteRelay: PublishRelay<Int> = .init()
-    private let subject: PublishRelay<PokemonSpeciesResponse?> = .init()
-    public var newResponse: Observable<PokemonSpeciesResponse?> {
-        let deinitVc = rx.deallocated
-            .withLatestFrom(subject.asObservable())
-        return Observable
-            .merge(
-                subject.asObservable(),
-                deinitVc
-            ).catch { _ in .empty() }
-            .take(1)
+    private lazy var dataSource = makeDataSource()
+
+    fileprivate enum Section {
+        case main
     }
-    private let viewModel: PokemonDeatilPageViewModel
-    init(viewModel: PokemonDeatilPageViewModel) {
-        self.viewModel = viewModel
+
+    // MARK: - Life cycle
+
+    init(store: PokemonDetailStore) {
+        self.store = store
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUIAttributes()
         setupLayout()
-        bindView()
+        bindStore()
+        store.send(.onAppear)
     }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        store.send(.viewWillDisappear)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        // 只有真的離開這一頁才交還,被別的畫面蓋住不算
+        guard isMovingFromParent || isBeingDismissed else { return }
+        finish()
+    }
+
     deinit {
-        print("PokemonDeatilPageViewController is deinit")
+        // 沒走正常流程就被釋放時的保險,避免等待的 continuation 永遠不回來
+        onFinish?(nil)
     }
 }
 
 // MARK: - private
+
 private extension PokemonDeatilPageViewController {
+
+    func finish() {
+        let handler = onFinish
+        onFinish = nil
+        handler?(store.viewState.species)
+    }
+
+    /// UITableView 沒有 CellRegistration,還是走 register + dequeue
+    func makeDataSource() -> UITableViewDiffableDataSource<Section, PokemonDetailStore.Row> {
+        .init(tableView: tableView) { [weak self] tableView, indexPath, row in
+            guard let self else { return UITableViewCell() }
+            switch row {
+            case .info(let species):
+                let cell = tableView.dequeueReusableCell(withIdentifier: "PokemonDetailInfoCell", for: indexPath)
+                (cell as? PokemonDetailInfoCell)?.delegate = self
+                (cell as? PokemonDetailInfoCell)?.bindView(
+                    .init(
+                        pokemon: self.store.pokemon,
+                        species: species,
+                        isFavorite: self.store.isFavoritePublisher
+                    )
+                )
+                return cell
+
+            case .stat:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "StatTableViewCell", for: indexPath)
+                (cell as? StatTableViewCell)?.bindView(self.store.pokemon)
+                return cell
+            }
+        }
+    }
+
+    func apply(_ rows: [PokemonDetailStore.Row]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, PokemonDetailStore.Row>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(rows, toSection: .main)
+        dataSource.apply(snapshot, animatingDifferences: true)
+    }
+
     func setupUIAttributes() {
         view.backgroundColor = .white
         tableView.backgroundColor = .white
@@ -57,8 +113,8 @@ private extension PokemonDeatilPageViewController {
         tableView.estimatedRowHeight = 250
         tableView.register(StatTableViewCell.self, forCellReuseIdentifier: "StatTableViewCell")
     }
+
     func setupLayout() {
-        
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
@@ -68,61 +124,55 @@ private extension PokemonDeatilPageViewController {
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
         ])
     }
-    func bindView() {
-        let bindViewRelay = PublishRelay<Void>()
-        defer { bindViewRelay.accept(()) }
 
-        let viewWillDisappear = rx.methodInvoked(#selector(UIViewController.viewWillDisappear(_:)))
-            .map { _ in }
-            .asDriver(onErrorDriveWith: .never())
-        let input = PokemonDeatilPageViewModel
-            .Input(
-                bindView: bindViewRelay.asDriver(onErrorDriveWith: .empty()),
-                isFavorite: favoriteRelay.asDriver(onErrorDriveWith: .empty()),
-                viewWillDisappear: viewWillDisappear
-            )
-        let output = viewModel.transform(input)
-        output.configuration
-            .drive()
-            .disposed(by: disposeBag)
-        output.list
-            .drive(tableView.rx.items) { [weak self] tableView, row, model in
-                switch model {
-                case let .info(info):
-                    let cell = tableView.dequeueReusableCell(withIdentifier: "PokemonDetailInfoCell", for: .init(row: row, section: .zero))
-                    (cell as? PokemonDetailInfoCell)?.delegate = self
-                    (cell as? PokemonDetailInfoCell)?.bindView(info)
-                    return cell
-                case .stat(let pokemon):
-                    let cell = tableView.dequeueReusableCell(withIdentifier: "StatTableViewCell", for: .init(row: row, section: .zero))
-                    (cell as? StatTableViewCell)?.bindView(pokemon)
-                    return cell
-                default:
-                    return UITableViewCell()
-                }
+    /// 舊版是六條 Driver 各自 drive;現在是一條 State 用 map + removeDuplicates 拆開
+    func bindStore() {
+        let state = store.$viewState
 
-            }.disposed(by: disposeBag)
-        output.isEmpty
-            .drive(view.rx.isEmpty)
-            .disposed(by: disposeBag)
-        output.isLoading
-            .drive(view.rx.indicatorAnimator)
-            .disposed(by: disposeBag)
-        output.spiecs
-            .drive(onNext: { [weak self] spiecs in
-                self?.subject.accept(spiecs)
-            })
-            .disposed(by: disposeBag)
-        output.title
-            .drive(onNext: { [weak self] title in
-                self?.title = title
-            })
-            .disposed(by: disposeBag)
+        state
+            .map(\.title)
+            .removeDuplicates()
+            .sink { [weak self] in self?.title = $0 }
+            .store(in: &cancellables)
+
+        state
+            .map(\.rows)
+            .removeDuplicates()
+            .sink { [weak self] rows in self?.apply(rows) }
+            .store(in: &cancellables)
+
+        state
+            .map(\.isEmpty)
+            .removeDuplicates()
+            .sink { [weak self] isEmpty in
+                // 既有的 Rx Binder 可以直接當 ObserverType 用,不用為了搬家重寫 UI 程式
+                self?.view.rx.isEmpty.on(.next(isEmpty))
+            }
+            .store(in: &cancellables)
+
+        state
+            .map(\.isLoading)
+            .removeDuplicates()
+            .sink { [weak self] isLoading in
+                self?.view.rx.indicatorAnimator.on(.next(isLoading))
+            }
+            .store(in: &cancellables)
+
+        state
+            .compactMap(\.alert)
+            .removeDuplicates()
+            .sink { [weak self] alert in
+                self?.presentAlert(alert) { [weak self] in self?.store.send(.dismissAlert) }
+            }
+            .store(in: &cancellables)
     }
 }
 
+// MARK: - PokemonDetailInfoCellDelegate
+
 extension PokemonDeatilPageViewController: PokemonDetailInfoCellDelegate {
+
     func clickFavoriteSelected(_ id: Int) {
-        favoriteRelay.accept(id)
+        store.send(.tapFavorite(id))
     }
 }
