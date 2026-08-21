@@ -64,17 +64,25 @@ final class APIService: NetworkService {
             }
         }
     }
-    /// Concurrency 版本:與上面的 `Observable` 版共存,由呼叫端有沒有 `await` 決定用哪一個。
-    /// 取消由 Task cancellation 驅動 — `automaticallyCancelling: true` 會把 Task 取消轉成 `dataRequest.cancel()`。
+
     func request<T: Endpoint>(_ endpoint: T) async throws -> T.Model {
-        do {
-            let dataRequest = try makeRequest(endpoint)
-            dataRequest.resume() // session 的 startRequestsImmediately 是 false,必須自己送出
-            return try await dataRequest
-                .serializingDecodable(T.Model.self, automaticallyCancelling: true)
-                .value
-        } catch let afError as AFError {
-            throw PkError.afError(afError)
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                let dataRequest = try makeRequest(endpoint)
+                dataRequest.responseDecodable(of: T.Model.self) { response in
+                    switch response.result {
+                    case .success(let model):
+                        continuation.resume(returning: model)
+                    case .failure(let fail):
+                        continuation.resume(throwing: PkError.afError(fail))
+                    }
+                }
+                dataRequest.resume()
+            } catch let afError as AFError {
+                continuation.resume(throwing: PkError.afError(afError))
+            } catch {
+                continuation.resume(throwing: PkError.unknown(error))
+            }
         }
     }
 

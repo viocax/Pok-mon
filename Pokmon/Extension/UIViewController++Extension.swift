@@ -9,8 +9,7 @@ import UIKit
 
 extension UIViewController {
 
-    /// 顯示一個 `AlertState`。
-    /// `onDismiss` 是給狀態容器把 alert 清掉用的 —— 不清的話同一個錯誤不會再觸發。
+    /// `onDismiss` 是給狀態容器把 alert 清掉用的
     func presentAlert(_ alert: AlertState, onDismiss: (() -> Void)? = nil) {
         let controller = UIAlertController(
             title: alert.title,

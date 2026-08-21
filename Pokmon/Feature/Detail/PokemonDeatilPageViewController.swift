@@ -53,11 +53,11 @@ final class PokemonDeatilPageViewController: UIViewController {
         super.viewDidDisappear(animated)
         // 只有真的離開這一頁才交還,被別的畫面蓋住不算
         guard isMovingFromParent || isBeingDismissed else { return }
+        store.send(.viewDidDisappear)
         finish()
     }
 
     deinit {
-        // 沒走正常流程就被釋放時的保險,避免等待的 continuation 永遠不回來
         onFinish?(nil)
     }
 }
@@ -72,7 +72,6 @@ private extension PokemonDeatilPageViewController {
         handler?(store.viewState.species)
     }
 
-    /// UITableView 沒有 CellRegistration,還是走 register + dequeue
     func makeDataSource() -> UITableViewDiffableDataSource<Section, PokemonDetailStore.Row> {
         .init(tableView: tableView) { [weak self] tableView, indexPath, row in
             guard let self else { return UITableViewCell() }
@@ -125,7 +124,6 @@ private extension PokemonDeatilPageViewController {
         ])
     }
 
-    /// 舊版是六條 Driver 各自 drive;現在是一條 State 用 map + removeDuplicates 拆開
     func bindStore() {
         let state = store.$viewState
 
@@ -145,7 +143,6 @@ private extension PokemonDeatilPageViewController {
             .map(\.isEmpty)
             .removeDuplicates()
             .sink { [weak self] isEmpty in
-                // 既有的 Rx Binder 可以直接當 ObserverType 用,不用為了搬家重寫 UI 程式
                 self?.view.rx.isEmpty.on(.next(isEmpty))
             }
             .store(in: &cancellables)

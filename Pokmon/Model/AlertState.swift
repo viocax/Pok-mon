@@ -7,8 +7,6 @@
 
 import Foundation
 
-/// 要顯示的 alert。錯誤不再走 side channel(ErrorTracker),而是變成 view state 的一部分,
-/// 由畫面決定什麼時候呈現、什麼時候清掉。
 struct AlertState: Equatable {
     var title: String
     var message: String

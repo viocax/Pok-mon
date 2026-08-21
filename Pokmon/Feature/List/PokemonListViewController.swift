@@ -4,11 +4,6 @@
 //
 //  Created by drake on 2026/8/21.
 //
-//  Spike:PokemonListViewController 的 Concurrency 版。
-//  UI 佈局照抄舊檔案,差別在資料流 — 用 Combine 訂閱 store.$viewState、
-//  事件用 store.send(.xxx) 送回去,清單改用 diffable data source + snapshot。
-//  Cell 內部維持 Rx,驗證新舊共存。
-//
 
 import Combine
 import RxCocoa
@@ -106,7 +101,6 @@ private extension PokemonListViewController {
         ])
     }
 
-    /// 舊版是六條 Driver 各自 drive;現在是一條 State 用 map + removeDuplicates 拆成六條。
     func bindStore() {
         let state = store.$viewState
 
@@ -128,7 +122,6 @@ private extension PokemonListViewController {
             .map(\.isLoading)
             .removeDuplicates()
             .sink { [weak self] isLoading in
-                // 既有的 Rx Binder 可以直接當 ObserverType 用,不用為了搬家重寫 UI 程式
                 guard let self else { return }
                 self.view.rx.indicatorAnimator.on(.next(isLoading))
             }
@@ -158,7 +151,6 @@ private extension PokemonListViewController {
             .store(in: &cancellables)
     }
 
-    /// CellRegistration 會自己處理 register,不用再 `collectionView.register(_:forCellWithReuseIdentifier:)`
     func makeDataSource() -> UICollectionViewDiffableDataSource<Section, CellViewModel> {
         let registration = UICollectionView.CellRegistration<PokemonCell, CellViewModel> { cell, _, model in
             cell.bindView(model)
@@ -195,7 +187,6 @@ extension PokemonListViewController: UICollectionViewDelegate {
 
     private func detectScrollToBottomEdge(_ scrollView: UIScrollView) {
         let isBottom = scrollView.contentOffset.y + scrollView.frame.size.height >= scrollView.contentSize.height
-        // 取代 distinctUntilChanged:只有從「不在底部」變成「在底部」才觸發
         guard isBottom != isScrollToBottom else { return }
         isScrollToBottom = isBottom
         if isBottom {

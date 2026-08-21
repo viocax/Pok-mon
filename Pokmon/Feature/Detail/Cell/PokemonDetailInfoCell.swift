@@ -102,7 +102,6 @@ class PokemonDetailInfoCell: UITableViewCell {
                 self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
             })
             .disposed(by: disposeBag)
-        // 收藏狀態由 store 推過來,只更新這顆星星,不用重建整個 cell
         info.isFavorite
             .sink { [weak self] isFavorite in
                 self?.favoriteButton.setImage(isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"), for: .normal)
