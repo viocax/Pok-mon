@@ -10,6 +10,7 @@ import RxSwift
 
 protocol NetworkService {
     func request<T: Endpoint>(_ endpoint: T) -> Observable<T.Model>
+    func request<T: Endpoint>(_ endpoint: T) async throws -> T.Model
 }
 
 final class APIService: NetworkService {
@@ -62,5 +63,37 @@ final class APIService: NetworkService {
                 return Disposables.create()
             }
         }
+    }
+    /// Concurrency 版本:與上面的 `Observable` 版共存,由呼叫端有沒有 `await` 決定用哪一個。
+    /// 取消由 Task cancellation 驅動 — `automaticallyCancelling: true` 會把 Task 取消轉成 `dataRequest.cancel()`。
+    func request<T: Endpoint>(_ endpoint: T) async throws -> T.Model {
+        do {
+            let dataRequest = try makeRequest(endpoint)
+            dataRequest.resume() // session 的 startRequestsImmediately 是 false,必須自己送出
+            return try await dataRequest
+                .serializingDecodable(T.Model.self, automaticallyCancelling: true)
+                .value
+        } catch let afError as AFError {
+            throw PkError.afError(afError)
+        }
+    }
+
+    /// 兩個 request 共用的組裝邏輯
+    private func makeRequest<T: Endpoint>(_ endpoint: T) throws -> DataRequest {
+        let parameters = try endpoint.setupParameter()
+        var urlString = endpoint.baseURL
+        if !endpoint.path.isEmpty {
+            urlString += "/\(endpoint.path)"
+        }
+        guard let url = URL(string: urlString) else {
+            throw PkError.urlError(.init(.badURL))
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = endpoint.httpMethod.rawValue
+        request.headers = endpoint.httpHeaders
+        request.timeoutInterval = 30
+
+        return session.request(try endpoint.endcoder.encode(request, with: parameters))
     }
 }

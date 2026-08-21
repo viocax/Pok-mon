@@ -19,6 +19,12 @@ class MockCoordinator: CoordinatorProcotocol, PokemonListCoordinatorProcotocol {
     func showDetailPage(model: Pokmon.PokemonShareData) -> RxSwift.Observable<Pokmon.PokemonSpeciesResponse?> {
         return injectShowDetailPage
     }
+    var injectShowDetailPageAsync: PokemonSpeciesResponse?
+    @MainActor
+    func showDetailPage(model: Pokmon.PokemonShareData) async -> Pokmon.PokemonSpeciesResponse? {
+        return injectShowDetailPageAsync
+    }
+
     var injectShowAlert: Observable<Void> = .empty()
     func showAlert(title: String, message: String) -> Observable<Void> {
         return injectShowAlert
