@@ -6,10 +6,10 @@
 //
 
 import Foundation
-import RxSwift
 @testable import Pokmon
 
-class MockFavoriteUseCase: FavoriteUseCase {
+/// 測試替身只在 MainActor 上使用，不做跨執行緒存取
+class MockFavoriteUseCase: FavoriteUseCase, @unchecked Sendable {
 
 
     var recordInsert: Int = 0

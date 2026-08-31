@@ -23,15 +23,18 @@ extension CellViewModel {
         var sepies: PokemonSpeciesResponse?
         var pokemon: PokmonResponse?
         let source: PokemonListResponse.Item
-        @Injected(\.service.network) var service
+        let service: any NetworkService
+
         init(
             sepies: PokemonSpeciesResponse? = nil,
             pokemon: PokmonResponse? = nil,
-            source: PokemonListResponse.Item
+            source: PokemonListResponse.Item,
+            service: any NetworkService = Dependencies.network
         ) {
             self.sepies = sepies
             self.pokemon = pokemon
             self.source = source
+            self.service = service
         }
     }
     struct Input {

@@ -143,13 +143,21 @@ extension PokemonListStore {
     }
 
     struct Dependency {
-        @Injected(\.service.network) var service
-        @Injected(\.usecase.favorite) var favorite
-        @Injected(\.usecase.list) var list
+        let service: any NetworkService
+        let favorite: any FavoriteUseCase
+        let list: any ListUsecase
         let coordinator: Coordinator
 
-        init(coordinator: Coordinator) {
+        init(
+            coordinator: Coordinator,
+            service: any NetworkService = Dependencies.network,
+            favorite: any FavoriteUseCase = Dependencies.favorite,
+            list: any ListUsecase = Dependencies.list
+        ) {
             self.coordinator = coordinator
+            self.service = service
+            self.favorite = favorite
+            self.list = list
         }
     }
 }

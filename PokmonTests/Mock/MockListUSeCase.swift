@@ -8,7 +8,8 @@
 import Foundation
 @testable import Pokmon
 
-class MockListUseCase: ListUsecase {
+/// 測試替身只在 MainActor 上使用，不做跨執行緒存取
+class MockListUseCase: ListUsecase, @unchecked Sendable {
     var injectCellViewModels: [CellViewModel] = []
     func listConvertCell(_ items: [PokemonListResponse.Item]) -> [CellViewModel] {
         injectCellViewModels

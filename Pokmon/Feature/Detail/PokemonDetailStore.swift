@@ -133,12 +133,19 @@ extension PokemonDetailStore {
         var number: Int { pokemon.id }
         let pokemon: PokmonResponse
         var spiecs: PokemonSpeciesResponse?
-        @Injected(\.service.network) var service
-        @Injected(\.usecase.favorite) var favorite
+        let service: any NetworkService
+        let favorite: any FavoriteUseCase
 
-        init(spiecs: PokemonSpeciesResponse?, pokemon: PokmonResponse) {
+        init(
+            spiecs: PokemonSpeciesResponse?,
+            pokemon: PokmonResponse,
+            service: any NetworkService = Dependencies.network,
+            favorite: any FavoriteUseCase = Dependencies.favorite
+        ) {
             self.spiecs = spiecs
             self.pokemon = pokemon
+            self.service = service
+            self.favorite = favorite
         }
     }
 

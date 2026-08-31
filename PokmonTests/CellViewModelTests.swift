@@ -31,8 +31,7 @@ final class CellViewModelTests: XCTestCase {
         let mockNetworkService = MockService()
         
         let mockSource = try! PokemonListResponse.Item(.init(name: "mockName", url: "https://pokeapi.co/api/v2/pokemon/\(expectNumber)"))
-        let mockDependency = CellViewModel.Dependency(source: mockSource)
-        mockDependency.mock(dependency: mockNetworkService, NetworkService.self)
+        let mockDependency = CellViewModel.Dependency(source: mockSource, service: mockNetworkService)
 
         let mockPokemon = PokmonResponse(id: expectNumber, name: expectName, height: 111, weight: 22, sprites: .init(thumbnail: expectThumbnail), species: .init(name: "TestName", url: "TestName"), types: [], stats: [])
 

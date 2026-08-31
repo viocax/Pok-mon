@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol ListUsecase {
+protocol ListUsecase: Sendable {
     func listConvertCell(_ items: [PokemonListResponse.Item]) -> [CellViewModel]
 }
 
