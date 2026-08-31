@@ -17,8 +17,9 @@ final class PokemonListStore {
 
     private let dependency: Dependency
 
-    private var loadTask: Task<Void, Never>?
-    private var detailTask: Task<Void, Never>?
+    /// `private(set)` 是為了讓測試能 await 到非同步流程結束
+    private(set) var loadTask: Task<Void, Never>?
+    private(set) var detailTask: Task<Void, Never>?
 
     // MARK: - Life cycle
 
