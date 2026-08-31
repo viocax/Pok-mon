@@ -145,7 +145,9 @@ final class UserDefaultStore: FavoriteUseCase {
 }
 ```
 
-- [ ] **Step 2: 更新既有的 UserDefault 測試並確認它先失敗**
+- [ ] **Step 2: 更新既有的 UserDefault 測試**
+
+這是中間狀態，此時建置必然失敗（`SceneDelegate` 與 `InjectObject` 還引用舊的 `UserDefaultWrapper`），不設驗證點，驗證統一在 Step 10。
 
 把 `PokmonTests/UserDefaultWrapperTests.swift` 更名為 `PokmonTests/UserDefaultStoreTests.swift`（`git mv`），內容改為：
 
@@ -195,9 +197,6 @@ final class UserDefaultStoreTests: XCTestCase {
 ```
 
 原版 `setUp` 沒有清空 suite，是靠測試順序僥倖通過的；新增的 `removeObject(forKey:)` 讓它真正可重複執行。
-
-Run: TEST
-Expected: 失敗，`cannot find 'UserDefaultStore' in scope` 之外還有 `InjectObject` 相關錯誤（此時 Step 3 之後才會全綠）。這一步只確認測試檔已納入編譯。
 
 - [ ] **Step 3: 新增 `Dependencies.swift`**
 
@@ -681,8 +680,23 @@ import Testing
         store.send(.dismissAlert)
         #expect(store.viewState.alert == nil)
     }
+
+    @Test func 點選cell後把species回填() async throws {
+        let coordinator = MockCoordinator()
+        coordinator.injectShowDetailPageAsync = Stub.species(cnName: "皮卡丘")
+        let cell = CellViewModel(dependency: .init(source: try Stub.item(25)))
+        #expect(cell.spiecs == nil)
+
+        let store = makeStore(coordinator: coordinator)
+        store.send(.tapCell(cell))
+        await store.detailTask?.value
+
+        #expect(cell.spiecs?.names.first?.name == "皮卡丘")
+    }
 }
 ```
+
+最後這個測試覆蓋的是手動驗收清單裡「返回列表後 species 回填、再次進入不重新請求」那一項，也是 `detailTask` 這個測試接縫存在的理由。
 
 - [ ] **Step 4: 執行 List Store 測試**
 
@@ -807,7 +821,7 @@ import Testing
 - [ ] **Step 6: 執行完整測試**
 
 Run: TEST
-Expected: TEST SUCCEEDED，兩個新 Suite 共 12 個測試全部通過
+Expected: TEST SUCCEEDED，兩個新 Suite 共 13 個測試全部通過（List 7 個、Detail 6 個）
 
 - [ ] **Step 7: Commit**
 
@@ -834,8 +848,11 @@ XCTestExpectation。"
 - Create: `Pokmon/Extension/UIView++State.swift`
 
 **Interfaces:**
-- Produces: `UIResponder.observe(_ apply: @escaping @MainActor () -> Void)`
+- Produces: `@MainActor final class ObservationToken`，含 `cancel()` 與 `isCancelled`
+- Produces: `@discardableResult UIResponder.observe(_ apply: @escaping @MainActor () -> Void) -> ObservationToken`
 - Produces: `UIView.setLoading(_ isLoading: Bool)`、`UIView.setEmpty(_ isEmpty: Bool)`
+
+**會被 reuse 的呼叫端（`PokemonCell`、`PokemonDetailInfoCell`）必須保存 token 並在 `prepareForReuse` 取消**；ViewController 可忽略回傳值。
 
 - [ ] **Step 1: 新增 `observe` helper**
 
@@ -854,6 +871,22 @@ Create `Pokmon/Extension/UIResponder++Observe.swift`：
 import Observation
 import UIKit
 
+/// `observe` 的取消把手。
+///
+/// cell 會被重用:重用後如果舊的觀察還在跑,它會繼續往同一批 label 寫上一格的
+/// 資料,而且每次 `bindView` 都再疊一組,觀察數隨滾動無上限成長。
+/// 所以凡是會 reuse 的呼叫端都必須在 `prepareForReuse` 取消。
+/// ViewController 的觀察期等同自身生命週期,可以忽略回傳值。
+@MainActor
+final class ObservationToken {
+
+    private(set) var isCancelled = false
+
+    func cancel() {
+        isCancelled = true
+    }
+}
+
 @MainActor
 extension UIResponder {
 
@@ -863,10 +896,20 @@ extension UIResponder {
     /// `onChange` 是在值真正寫入**之前**觸發的(willSet 語義),因此不能在 `onChange`
     /// 裡直接讀新值——必須丟進 `Task` 等這一輪寫完再讀,重新掛載時 `apply` 讀到的
     /// 才是新值。
-    func observe(_ apply: @escaping @MainActor () -> Void) {
+    @discardableResult
+    func observe(_ apply: @escaping @MainActor () -> Void) -> ObservationToken {
+        let token = ObservationToken()
+        observe(token: token, apply)
+        return token
+    }
+
+    private func observe(token: ObservationToken, _ apply: @escaping @MainActor () -> Void) {
+        guard !token.isCancelled else { return }
+
         withObservationTracking(apply) {
             Task { @MainActor [weak self] in
-                self?.observe(apply)
+                guard let self, !token.isCancelled else { return }
+                self.observe(token: token, apply)
             }
         }
     }
@@ -1198,7 +1241,18 @@ import UIKit
 protocol PokemonDetailInfoCellDelegate: AnyObject {
 ```
 
-刪除屬性 `private var cancellables: Set<AnyCancellable> = .init()`，並把 `prepareForReuse` 中的 `cancellables = .init()` 一併刪除。
+把屬性 `private var cancellables: Set<AnyCancellable> = .init()` 改為：
+
+```swift
+    private var observationTokens: [ObservationToken] = []
+```
+
+把 `prepareForReuse` 中的 `cancellables = .init()` 改為（**這個 cell 會被重用，不取消舊觀察的話它會繼續往同一顆按鈕寫上一筆的收藏狀態**）：
+
+```swift
+        observationTokens.forEach { $0.cancel() }
+        observationTokens = []
+```
 
 把 `bindView(_:)` 結尾的：
 
@@ -1213,13 +1267,15 @@ protocol PokemonDetailInfoCellDelegate: AnyObject {
 改為：
 
 ```swift
-        observe { [weak self] in
-            let isFavorite = info.isFavorite()
-            self?.favoriteButton.setImage(
-                isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"),
-                for: .normal
-            )
-        }
+        observationTokens.append(
+            observe { [weak self] in
+                let isFavorite = info.isFavorite()
+                self?.favoriteButton.setImage(
+                    isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"),
+                    for: .normal
+                )
+            }
+        )
 ```
 
 - [ ] **Step 3: Detail VC 換掉 Combine**
@@ -1587,13 +1643,16 @@ import Kingfisher
 
 ```swift
     private weak var viewModel: CellViewModel?
+    private var observationTokens: [ObservationToken] = []
 ```
 
-`prepareForReuse` 改為：
+`prepareForReuse` 改為（**取消舊觀察是必要的**：cell 重用後若舊觀察還在跑，它會繼續往同一批 label 寫上一格的資料，而且每次 `bindView` 再疊一組，觀察數隨滾動無上限成長）：
 
 ```swift
     override func prepareForReuse() {
         super.prepareForReuse()
+        observationTokens.forEach { $0.cancel() }
+        observationTokens = []
         viewModel?.cancel()
         viewModel = nil
         thumbNailImageView.kf.cancelDownloadTask()
@@ -1607,31 +1666,33 @@ import Kingfisher
     func bindView(_ viewModel: CellViewModel) {
         self.viewModel = viewModel
 
-        observe { [weak self] in
-            self?.numberLabel.text = viewModel.numberText
-        }
+        observationTokens = [
+            observe { [weak self] in
+                self?.numberLabel.text = viewModel.numberText
+            },
 
-        observe { [weak self] in
-            self?.nameLabel.text = viewModel.displayName
-        }
+            observe { [weak self] in
+                self?.nameLabel.text = viewModel.displayName
+            },
 
-        observe { [weak self] in
-            guard let self, let urlString = viewModel.imageURL else { return }
-            self.setImage(urlString)
-        }
+            observe { [weak self] in
+                guard let self, let urlString = viewModel.imageURL else { return }
+                self.setImage(urlString)
+            },
 
-        observe { [weak self] in
-            guard let self else { return }
-            let types = viewModel.types
-            guard !types.isEmpty else { return }
-            self.cornerView.layer.borderColor = types.first?.color.cgColor
-            self.typesStackView.setTypes(types)
-            self.typesStackView.insertArrangedSubview(.init(), at: .zero)
-            self.cornerView.gradientLayer.colors = [
-                types.first?.color.cgColor ?? UIColor.white.cgColor,
-                UIColor.white.cgColor
-            ]
-        }
+            observe { [weak self] in
+                guard let self else { return }
+                let types = viewModel.types
+                guard !types.isEmpty else { return }
+                self.cornerView.layer.borderColor = types.first?.color.cgColor
+                self.typesStackView.setTypes(types)
+                self.typesStackView.insertArrangedSubview(.init(), at: .zero)
+                self.cornerView.gradientLayer.colors = [
+                    types.first?.color.cgColor ?? UIColor.white.cgColor,
+                    UIColor.white.cgColor
+                ]
+            }
+        ]
 
         viewModel.bindView()
     }
@@ -1767,7 +1828,7 @@ CellViewModel(dependency: .init(source: try Stub.item(1)))
 CellViewModel(source: try Stub.item(1))
 ```
 
-（共 6 處，分佈在三個測試中：`載入成功時填入cells與nextOffset` 3 處、`已經到底時loadMore不再發請求` 1 處、`收藏過濾會改變displayCells` 2 處。）
+（共 7 處，分佈在四個測試中：`載入成功時填入cells與nextOffset` 3 處、`已經到底時loadMore不再發請求` 1 處、`收藏過濾會改變displayCells` 2 處、`點選cell後把species回填` 1 處。）
 
 - [ ] **Step 8: 建置與測試**
 
@@ -2133,7 +2194,7 @@ nonisolated deinit 碰不到非 Sendable 的 closure,改用 isolated deinit。"
 
 - [ ] **Step 1: 寫索引頁**
 
-`docs/uikit-to-concurrency/README.md` 需包含：講稿目的、適用對象、專案在遷移前後的數字對照（pod 數 7 → 2、Rx 檔案數 9 → 0、Store 測試覆蓋 0 → 12 個測試）、以及 11 章的連結與各章對應的 commit hash。
+`docs/uikit-to-concurrency/README.md` 需包含：講稿目的、適用對象、專案在遷移前後的數字對照（pod 數 7 → 2、Rx 檔案數 9 → 0、Store 測試覆蓋 0 → 13 個測試）、以及 11 章的連結與各章對應的 commit hash。
 
 - [ ] **Step 2: 寫第 1–5 章（回顧既有 commit）**
 
