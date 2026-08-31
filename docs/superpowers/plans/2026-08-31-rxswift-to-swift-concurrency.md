@@ -793,18 +793,30 @@ import Testing
         #expect(store.viewState.species != nil)
     }
 
-    @Test func 切換收藏() {
+    @Test func 未收藏時點擊會新增() {
         let favorite = MockFavoriteUseCase()
         favorite.injectIsContain = false
 
         let store = makeStore(favorite: favorite)
         #expect(store.viewState.isFavorite == false)
 
-        favorite.injectIsContain = true
         store.send(.tapFavorite(1))
 
         #expect(favorite.recordInsert == 1)
+        #expect(favorite.recordRemove == 0)
+    }
+
+    @Test func 已收藏時點擊會移除() {
+        let favorite = MockFavoriteUseCase()
+        favorite.injectIsContain = true
+
+        let store = makeStore(favorite: favorite)
         #expect(store.viewState.isFavorite == true)
+
+        store.send(.tapFavorite(1))
+
+        #expect(favorite.recordRemove == 1)
+        #expect(favorite.recordInsert == 0)
     }
 
     @Test func viewWillDisappear觸發synchronize() {
@@ -821,7 +833,7 @@ import Testing
 - [ ] **Step 6: 執行完整測試**
 
 Run: TEST
-Expected: TEST SUCCEEDED，兩個新 Suite 共 13 個測試全部通過（List 7 個、Detail 6 個）
+Expected: TEST SUCCEEDED，兩個新 Suite 共 14 個測試全部通過（List 7 個、Detail 7 個）
 
 - [ ] **Step 7: Commit**
 
@@ -2194,7 +2206,7 @@ nonisolated deinit 碰不到非 Sendable 的 closure,改用 isolated deinit。"
 
 - [ ] **Step 1: 寫索引頁**
 
-`docs/uikit-to-concurrency/README.md` 需包含：講稿目的、適用對象、專案在遷移前後的數字對照（pod 數 7 → 2、Rx 檔案數 9 → 0、Store 測試覆蓋 0 → 13 個測試）、以及 11 章的連結與各章對應的 commit hash。
+`docs/uikit-to-concurrency/README.md` 需包含：講稿目的、適用對象、專案在遷移前後的數字對照（pod 數 7 → 2、Rx 檔案數 9 → 0、Store 測試覆蓋 0 → 14 個測試）、以及 11 章的連結與各章對應的 commit hash。
 
 - [ ] **Step 2: 寫第 1–5 章（回顧既有 commit）**
 
