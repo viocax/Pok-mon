@@ -2077,10 +2077,15 @@ pod install
 - [ ] **Step 6: 確認 Rx 已完全消失**
 
 ```bash
-git grep -in "RxSwift\|RxCocoa\|RxRelay\|RxBlocking\|RxTest\|Swinject\|import Combine\|DisposeBag\|Observable<" -- Pokmon PokmonTests PokmonUITests Podfile
+git grep -n "^import \(RxSwift\|RxCocoa\|RxRelay\|RxBlocking\|RxTest\|Combine\|Swinject\)\|DisposeBag\|Observable<\|Reactive where\|AnyCancellable\|@Published" \
+  -- Pokmon PokmonTests PokmonUITests
 ```
 
 Expected: 無任何輸出
+
+這條刻意只查 **import 與型別使用**，不查註解散文。`Pokmon/Model/Dependencies.swift`
+有一行「取代 Swinject 容器」的說明，它告訴讀者這個型別取代了什麼，不該為了讓
+檢查變綠而刪掉。
 
 ```bash
 grep -E "RxSwift|Swinject" Podfile.lock
