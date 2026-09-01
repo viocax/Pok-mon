@@ -1270,10 +1270,11 @@ import UIKit
 protocol PokemonDetailInfoCellDelegate: AnyObject {
 ```
 
-把屬性 `private var cancellables: Set<AnyCancellable> = .init()` 改為：
+把屬性 `private var cancellables: Set<AnyCancellable> = .init()` 改為（`isFavoriteProvider` 存成屬性，是為了讓 `observe` 的 closure 只需弱捕捉 `self`——直接捕捉 `info` 會讓 `apply` 強持有 store，形成 `store → registrar → onChange → apply → store` 的環）：
 
 ```swift
     private var observationTokens: [ObservationToken] = []
+    private var isFavoriteProvider: (@MainActor () -> Bool)?
 ```
 
 把 `prepareForReuse` 中的 `cancellables = .init()` 改為（**這個 cell 會被重用，不取消舊觀察的話它會繼續往同一顆按鈕寫上一筆的收藏狀態**）：
@@ -1281,6 +1282,7 @@ protocol PokemonDetailInfoCellDelegate: AnyObject {
 ```swift
         observationTokens.forEach { $0.cancel() }
         observationTokens = []
+        isFavoriteProvider = nil
 ```
 
 把 `bindView(_:)` 結尾的：
@@ -1296,16 +1298,19 @@ protocol PokemonDetailInfoCellDelegate: AnyObject {
 改為：
 
 ```swift
+        isFavoriteProvider = info.isFavorite
         observationTokens.append(
             observe { [weak self] in
-                let isFavorite = info.isFavorite()
-                self?.favoriteButton.setImage(
+                guard let self, let isFavorite = self.isFavoriteProvider?() else { return }
+                self.favoriteButton.setImage(
                     isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"),
                     for: .normal
                 )
             }
         )
 ```
+
+**不可以寫成 `observe { [weak self] in let isFavorite = info.isFavorite() ... }`。** 那樣 `apply` 會強捕捉 `info`，而 `info.isFavorite` 又強持有 store，形成環；`cancel()` 擋不掉已註冊未觸發的那一次。詳見 `UIResponder++Observe.swift` 的捕捉規則。
 
 - [ ] **Step 3: Detail VC 換掉 Combine**
 
@@ -1697,20 +1702,23 @@ import Kingfisher
 
         observationTokens = [
             observe { [weak self] in
-                self?.numberLabel.text = viewModel.numberText
+                guard let self, let viewModel = self.viewModel else { return }
+                self.numberLabel.text = viewModel.numberText
             },
 
             observe { [weak self] in
-                self?.nameLabel.text = viewModel.displayName
+                guard let self, let viewModel = self.viewModel else { return }
+                self.nameLabel.text = viewModel.displayName
             },
 
             observe { [weak self] in
-                guard let self, let urlString = viewModel.imageURL else { return }
+                guard let self, let viewModel = self.viewModel,
+                      let urlString = viewModel.imageURL else { return }
                 self.setImage(urlString)
             },
 
             observe { [weak self] in
-                guard let self else { return }
+                guard let self, let viewModel = self.viewModel else { return }
                 let types = viewModel.types
                 guard !types.isEmpty else { return }
                 self.cornerView.layer.borderColor = types.first?.color.cgColor
@@ -1726,6 +1734,8 @@ import Kingfisher
         viewModel.bindView()
     }
 ```
+
+**每個 closure 都必須從 `self.viewModel` 取值，不可以直接捕捉參數 `viewModel`。** 直接捕捉會讓 `apply` 強持有 view model，而 `apply` 被註冊在 view model 自己的 registrar 上，形成 `viewModel → registrar → onChange → apply → viewModel` 的自持環——view model 永遠不釋放，跟 cell 的生命週期無關，`cancel()` 也擋不掉。詳見 `UIResponder++Observe.swift` 的捕捉規則。
 
 把原本的 `var imageURL: Binder<String>` 計算屬性刪除，改為 private extension 中的方法：
 
