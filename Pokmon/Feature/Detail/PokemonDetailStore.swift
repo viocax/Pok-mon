@@ -5,24 +5,21 @@
 //  Created by drake on 2026/8/21.
 //
 
-import Combine
 import Foundation
+import Observation
 
+@Observable
 @MainActor
 final class PokemonDetailStore {
 
     // MARK: - Properties
 
-    @Published private(set) var viewState: State = .init()
+    private(set) var viewState: State = .init()
 
     private let dependency: Dependency
 
     /// `private(set)` 是為了讓測試能 await 到非同步流程結束
     private(set) var loadTask: Task<Void, Never>?
-
-    var isFavoritePublisher: AnyPublisher<Bool, Never> {
-        $viewState.map(\.isFavorite).removeDuplicates().eraseToAnyPublisher()
-    }
 
     // MARK: - Life cycle
 
@@ -127,7 +124,9 @@ extension PokemonDetailStore {
     struct Info {
         let pokemon: PokmonResponse
         let species: PokemonSpeciesResponse
-        let isFavorite: AnyPublisher<Bool, Never>
+        /// closure 在 cell 的 `observe` 內被呼叫,讀 store 屬性的動作就完成追蹤註冊,
+        /// cell 因此不需要認識 Store 型別。這是 AnyPublisher 欄位的直接對應物。
+        let isFavorite: @MainActor () -> Bool
     }
 
     struct Dependency {

@@ -5,8 +5,6 @@
 //  Created by Jie liang Huang on 2024/3/9.
 //
 
-import Combine
-import RxCocoa
 import UIKit
 
 final class PokemonDeatilPageViewController: UIViewController {
@@ -17,7 +15,7 @@ final class PokemonDeatilPageViewController: UIViewController {
     var onFinish: ((PokemonSpeciesResponse?) -> Void)?
 
     private let store: PokemonDetailStore
-    private var cancellables: Set<AnyCancellable> = .init()
+    private var presentedAlert: AlertState?
     private let tableView: UITableView = .init(frame: .zero, style: .insetGrouped)
     private lazy var dataSource = makeDataSource()
 
@@ -83,7 +81,7 @@ private extension PokemonDeatilPageViewController {
                     .init(
                         pokemon: self.store.pokemon,
                         species: species,
-                        isFavorite: self.store.isFavoritePublisher
+                        isFavorite: { [store = self.store] in store.viewState.isFavorite }
                     )
                 )
                 return cell
@@ -125,43 +123,36 @@ private extension PokemonDeatilPageViewController {
     }
 
     func bindStore() {
-        let state = store.$viewState
+        observe { [weak self] in
+            guard let self else { return }
+            self.title = self.store.viewState.title
+        }
 
-        state
-            .map(\.title)
-            .removeDuplicates()
-            .sink { [weak self] in self?.title = $0 }
-            .store(in: &cancellables)
+        observe { [weak self] in
+            guard let self else { return }
+            self.apply(self.store.viewState.rows)
+        }
 
-        state
-            .map(\.rows)
-            .removeDuplicates()
-            .sink { [weak self] rows in self?.apply(rows) }
-            .store(in: &cancellables)
+        observe { [weak self] in
+            guard let self else { return }
+            self.view.setEmpty(self.store.viewState.isEmpty)
+        }
 
-        state
-            .map(\.isEmpty)
-            .removeDuplicates()
-            .sink { [weak self] isEmpty in
-                self?.view.rx.isEmpty.on(.next(isEmpty))
+        observe { [weak self] in
+            guard let self else { return }
+            self.view.setLoading(self.store.viewState.isLoading)
+        }
+
+        observe { [weak self] in
+            guard let self else { return }
+            guard let alert = self.store.viewState.alert else {
+                self.presentedAlert = nil
+                return
             }
-            .store(in: &cancellables)
-
-        state
-            .map(\.isLoading)
-            .removeDuplicates()
-            .sink { [weak self] isLoading in
-                self?.view.rx.indicatorAnimator.on(.next(isLoading))
-            }
-            .store(in: &cancellables)
-
-        state
-            .compactMap(\.alert)
-            .removeDuplicates()
-            .sink { [weak self] alert in
-                self?.presentAlert(alert) { [weak self] in self?.store.send(.dismissAlert) }
-            }
-            .store(in: &cancellables)
+            guard self.presentedAlert != alert else { return }
+            self.presentedAlert = alert
+            self.presentAlert(alert) { [weak self] in self?.store.send(.dismissAlert) }
+        }
     }
 }
 

@@ -5,9 +5,9 @@
 //  Created by Jie liang Huang on 2024/3/10.
 //
 
-import Combine
 import UIKit
 
+@MainActor
 protocol PokemonDetailInfoCellDelegate: AnyObject {
     func clickFavoriteSelected(_ id: Int)
 }
@@ -24,7 +24,8 @@ class PokemonDetailInfoCell: UITableViewCell {
     @IBOutlet weak var ImageCollectionViews: UICollectionView!
     @IBOutlet weak var descriptionLabel: UILabel!
 
-    private var cancellables: Set<AnyCancellable> = .init()
+    private var observationTokens: [ObservationToken] = []
+    private var isFavoriteProvider: (@MainActor () -> Bool)?
     private var pokemonID: Int?
     private lazy var genderDataSource = makeGenderDataSource()
 
@@ -46,7 +47,9 @@ class PokemonDetailInfoCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        cancellables = .init()
+        observationTokens.forEach { $0.cancel() }
+        observationTokens = []
+        isFavoriteProvider = nil
         pokemonID = nil
         pageControl.currentPage = .zero
         ImageCollectionViews.setContentOffset(.zero, animated: false)
@@ -104,11 +107,16 @@ class PokemonDetailInfoCell: UITableViewCell {
         pageControl.numberOfPages = genders.count
         apply(genders)
 
-        info.isFavorite
-            .sink { [weak self] isFavorite in
-                self?.favoriteButton.setImage(isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"), for: .normal)
+        isFavoriteProvider = info.isFavorite
+        observationTokens.append(
+            observe { [weak self] in
+                guard let self, let isFavorite = self.isFavoriteProvider?() else { return }
+                self.favoriteButton.setImage(
+                    isFavorite ? .init(named: "starFill") : .init(named: "starEmpty"),
+                    for: .normal
+                )
             }
-            .store(in: &cancellables)
+        )
     }
 }
 
