@@ -55,7 +55,9 @@ final class PokemonDeatilPageViewController: UIViewController {
         finish()
     }
 
-    deinit {
+    /// nonisolated deinit 碰不到非 Sendable 的 closure。
+    /// isolated deinit 讓它在 MainActor 上執行(Swift 6.2 起支援)。
+    isolated deinit {
         onFinish?(nil)
     }
 }
