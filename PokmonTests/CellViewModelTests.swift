@@ -28,10 +28,24 @@ import Testing
         )
     }
 
+    /// 只有 `pokemon` 會被這個型別呼叫，另兩個給一個明確失敗的實作，
+    /// 誤呼叫時測試會紅而不是靜默通過。
+    private func makeAPI(
+        pokemon: @escaping @Sendable (Int) async throws -> PokmonResponse
+    ) -> PokemonAPIClient {
+        .init(
+            list: { _ in throw PkError.badRequest },
+            pokemon: pokemon,
+            species: { _ in throw PkError.badRequest }
+        )
+    }
+
     @Test func 載入前後的輸出() async throws {
-        let service = MockService()
-        service.injectAsyncResponse = makePokemon()
-        let viewModel = CellViewModel(source: try Stub.item(expectNumber), service: service)
+        let response = makePokemon()
+        let viewModel = CellViewModel(
+            source: try Stub.item(expectNumber),
+            api: makeAPI(pokemon: { _ in response })
+        )
 
         #expect(viewModel.numberText == "No.\(expectNumber)")
         #expect(viewModel.displayName == "")
@@ -47,22 +61,26 @@ import Testing
     }
 
     @Test func 已有pokemon時不重複請求() async throws {
-        let service = MockService()
+        let calls = Recorder<Int>()
+        let response = makePokemon()
         let viewModel = CellViewModel(
             source: try Stub.item(expectNumber),
-            service: service,
-            pokemon: makePokemon()
+            api: makeAPI(pokemon: { id in calls.record(id); return response }),
+            pokemon: response
         )
 
         viewModel.bindView()
         await viewModel.loadTask?.value
 
-        #expect(service.requestedPaths.isEmpty)
+        #expect(calls.recorded.isEmpty)
         #expect(viewModel.displayName == expectName)
     }
 
     @Test func pokemon尚未載入時getPokemon拋錯() throws {
-        let viewModel = CellViewModel(source: try Stub.item(expectNumber))
+        let viewModel = CellViewModel(
+            source: try Stub.item(expectNumber),
+            api: makeAPI(pokemon: { _ in throw PkError.badRequest })
+        )
 
         #expect(throws: PkError.self) {
             try viewModel.getPokemon()
@@ -75,6 +93,7 @@ import Testing
         let pokemon = makePokemon()
         let viewModel = CellViewModel(
             source: try Stub.item(expectNumber),
+            api: makeAPI(pokemon: { _ in pokemon }),
             pokemon: pokemon
         )
 
@@ -82,7 +101,10 @@ import Testing
     }
 
     @Test func updateDetailPage寫入species() throws {
-        let viewModel = CellViewModel(source: try Stub.item(expectNumber))
+        let viewModel = CellViewModel(
+            source: try Stub.item(expectNumber),
+            api: makeAPI(pokemon: { _ in throw PkError.badRequest })
+        )
         #expect(viewModel.spiecs == nil)
 
         viewModel.updateDetailPage(response: Stub.species())

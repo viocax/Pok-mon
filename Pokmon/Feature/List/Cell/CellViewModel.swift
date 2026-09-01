@@ -23,17 +23,17 @@ final class CellViewModel {
     private(set) var loadTask: Task<Void, Never>?
 
     private let source: PokemonListResponse.Item
-    private let service: any NetworkService
+    private let api: PokemonAPIClient
 
     init(
         source: PokemonListResponse.Item,
-        service: any NetworkService = Dependencies.network,
+        api: PokemonAPIClient = Dependencies.api,
         sepies: PokemonSpeciesResponse? = nil,
         pokemon: PokmonResponse? = nil
     ) {
         self.number = source.number
         self.source = source
-        self.service = service
+        self.api = api
         self.sepies = sepies
         self.pokemon = pokemon
     }
@@ -70,7 +70,7 @@ final class CellViewModel {
             self.isLoading = true
             defer { if !Task.isCancelled { self.isLoading = false } }
 
-            let response = try? await self.service.request(PokemonEndpoint(id: "\(self.number)"))
+            let response = try? await self.api.pokemon(self.number)
             guard !Task.isCancelled else { return }
 
             self.pokemon = response
