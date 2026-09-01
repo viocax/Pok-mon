@@ -5,8 +5,6 @@
 //  Created by drake on 2026/8/21.
 //
 
-import Combine
-import RxCocoa
 import UIKit
 
 final class PokemonListViewController: UIViewController {
@@ -14,7 +12,10 @@ final class PokemonListViewController: UIViewController {
     // MARK: - Properties
 
     private let store: PokemonListStore
-    private var cancellables: Set<AnyCancellable> = .init()
+
+    /// State 是單一屬性,任何欄位變動都會讓所有 observe closure 重跑。
+    /// 其餘動作都冪等,只有 present alert 需要自己防重複。
+    private var presentedAlert: AlertState?
 
     private let listFlowLayout: PokemonListViewController.ListFlowLayout = .init()
     private let gridFlowLayout: PokemonListViewController.GridFlowLayout = .init()
@@ -102,53 +103,42 @@ private extension PokemonListViewController {
     }
 
     func bindStore() {
-        let state = store.$viewState
+        observe { [weak self] in
+            guard let self else { return }
+            self.applyLayout(isList: self.store.viewState.isListLayout)
+        }
 
-        state
-            .map(\.isListLayout)
-            .removeDuplicates()
-            .sink { [weak self] in self?.applyLayout(isList: $0) }
-            .store(in: &cancellables)
+        observe { [weak self] in
+            guard let self else { return }
+            let isOn = self.store.viewState.isFavoriteFilterOn
+            self.isFavoriteButton.setImage(.init(systemName: isOn ? "bookmark.fill" : "bookmark"), for: .normal)
+        }
 
-        state
-            .map(\.isFavoriteFilterOn)
-            .removeDuplicates()
-            .sink { [weak self] isOn in
-                self?.isFavoriteButton.setImage(.init(systemName: isOn ? "bookmark.fill" : "bookmark"), for: .normal)
+        observe { [weak self] in
+            guard let self else { return }
+            self.view.setLoading(self.store.viewState.isLoading)
+        }
+
+        observe { [weak self] in
+            guard let self else { return }
+            self.view.setEmpty(self.store.viewState.isEmpty)
+        }
+
+        observe { [weak self] in
+            guard let self else { return }
+            self.apply(self.store.viewState.displayCells)
+        }
+
+        observe { [weak self] in
+            guard let self else { return }
+            guard let alert = self.store.viewState.alert else {
+                self.presentedAlert = nil
+                return
             }
-            .store(in: &cancellables)
-
-        state
-            .map(\.isLoading)
-            .removeDuplicates()
-            .sink { [weak self] isLoading in
-                guard let self else { return }
-                self.view.rx.indicatorAnimator.on(.next(isLoading))
-            }
-            .store(in: &cancellables)
-
-        state
-            .map(\.isEmpty)
-            .removeDuplicates()
-            .sink { [weak self] isEmpty in
-                guard let self else { return }
-                self.view.rx.isEmpty.on(.next(isEmpty))
-            }
-            .store(in: &cancellables)
-
-        state
-            .map(\.displayCells)
-            .removeDuplicates()
-            .sink { [weak self] cells in self?.apply(cells) }
-            .store(in: &cancellables)
-
-        state
-            .compactMap(\.alert)
-            .removeDuplicates()
-            .sink { [weak self] alert in
-                self?.presentAlert(alert) { [weak self] in self?.store.send(.dismissAlert) }
-            }
-            .store(in: &cancellables)
+            guard self.presentedAlert != alert else { return }
+            self.presentedAlert = alert
+            self.presentAlert(alert) { [weak self] in self?.store.send(.dismissAlert) }
+        }
     }
 
     func makeDataSource() -> UICollectionViewDiffableDataSource<Section, CellViewModel> {

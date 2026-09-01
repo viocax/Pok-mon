@@ -5,15 +5,16 @@
 //  Created by drake on 2026/8/21.
 //
 
-import Combine
 import Foundation
+import Observation
 
+@Observable
 @MainActor
 final class PokemonListStore {
 
     // MARK: - Properties
 
-    @Published private(set) var viewState: State = .init()
+    private(set) var viewState: State = .init()
 
     private let dependency: Dependency
 
