@@ -216,10 +216,14 @@ final class Recorder<Value>: Sendable {
 | `Pokmon/Model/Client/FavoritesClient.swift` | 同上 |
 | `PokmonTests/Recorder.swift` | 測試用的執行緒安全記錄器 |
 
-**修改（9）**：`Dependencies.swift`、`PokemonListStore.swift`、
+**修改（10）**：`Dependencies.swift`、`PokemonListStore.swift`、
 `PokemonDetailStore.swift`、`CellViewModel.swift`、`SceneDelegate.swift`、
-`PokemonListStoreTests.swift`、`PokemonDetailStoreTests.swift`、
-`CellViewModelTests.swift`、`UserDefaultStoreTests.swift`
+`Pokmon/Feature/CoordinatorProcotocol.swift`、`PokemonListStoreTests.swift`、
+`PokemonDetailStoreTests.swift`、`CellViewModelTests.swift`、
+`UserDefaultStoreTests.swift`
+
+`CoordinatorProcotocol.swift` 是 `PokemonDetailStore` 的唯一生產建構點，
+`Dependency` struct 刪除後必須跟著改。
 
 **刪除（4）**：`Pokmon/Model/UseCase/ListUseCase.swift`、
 `PokmonTests/Mock/MockService.swift`、`PokmonTests/Mock/MockFavoriteUseCase.swift`、
