@@ -124,7 +124,9 @@ Dependencies/
 ### SwiftPackageManager ###
 Packages
 xcuserdata
-*.xcodeproj
+# 這行原本是 *.xcodeproj。它會讓 git 完全不進入該目錄，使下方
+# "### Xcode Patch ###" 區塊的反向規則(!*.xcodeproj/xcshareddata/ 等)全部失效——
+# 被排除的目錄內部無法再被重新納入。改由下方 *.xcodeproj/* 搭配反向規則處理。
 
 
 ### SwiftPM ###

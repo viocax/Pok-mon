@@ -4,6 +4,11 @@
 - 分支：`concurrency`（基於 `73bf9d6`）
 - 目的：技術改造 + 團隊講稿素材（UIKit 如何漸進搬遷至 Swift Concurrency）
 
+> **後續變更（2026-09-01）**：本計畫執行完畢後，專案的相依管理由 CocoaPods
+> 改為 Swift Package Manager，`Podfile` / `Podfile.lock` / `Pods/` /
+> `Pokmon.xcworkspace` 均已移除。下文各步驟中的 `pod install` 是當時的實際
+> 操作記錄，保留以反映歷史；現在的建置指令是 `-project Pokmon.xcodeproj`。
+
 ## 1. 背景
 
 `concurrency` 分支已完成第一階段：兩支 ViewModel 改寫為 `@MainActor` 的
@@ -292,9 +297,9 @@ before / after 程式碼對照與「為什麼是這個順序」的說明。
 每個步驟皆須通過：
 
 ```
-xcodebuild build -workspace Pokmon.xcworkspace -scheme Pokmon \
+xcodebuild build -project Pokmon.xcodeproj -scheme Pokmon \
   -destination 'platform=iOS Simulator,name=iPhone 17'
-xcodebuild test  -workspace Pokmon.xcworkspace -scheme Pokmon \
+xcodebuild test  -project Pokmon.xcodeproj -scheme Pokmon \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 

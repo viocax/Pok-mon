@@ -10,6 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-31-rxswift-to-swift-concurrency-design.md`
 
+> **後續變更（2026-09-01）**：本計畫執行完畢後，專案的相依管理由 CocoaPods
+> 改為 Swift Package Manager，`Podfile` / `Podfile.lock` / `Pods/` /
+> `Pokmon.xcworkspace` 均已移除。下文各步驟中的 `pod install` 是當時的實際
+> 操作記錄，保留以反映歷史；現在的建置指令是 `-project Pokmon.xcodeproj`。
+
 ## Global Constraints
 
 - 分支：`concurrency`。每個 Task 結束時 commit。
@@ -23,11 +28,11 @@
 
 ```bash
 # BUILD
-xcodebuild build -workspace Pokmon.xcworkspace -scheme Pokmon \
+xcodebuild build -project Pokmon.xcodeproj -scheme Pokmon \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 
 # TEST
-xcodebuild test -workspace Pokmon.xcworkspace -scheme Pokmon \
+xcodebuild test -project Pokmon.xcodeproj -scheme Pokmon \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
@@ -1168,7 +1173,7 @@ Expected: TEST SUCCEEDED
 
 ```bash
 xcrun simctl boot "iPhone 17" || true
-xcodebuild -workspace Pokmon.xcworkspace -scheme Pokmon \
+xcodebuild -project Pokmon.xcodeproj -scheme Pokmon \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   -derivedDataPath ./DD build
 xcrun simctl install booted ./DD/Build/Products/Debug-iphonesimulator/Pokmon.app
@@ -2180,7 +2185,7 @@ Expected: TEST SUCCEEDED
 - [ ] **Step 5: 確認沒有殘留的併發警告**
 
 ```bash
-xcodebuild build -workspace Pokmon.xcworkspace -scheme Pokmon \
+xcodebuild build -project Pokmon.xcodeproj -scheme Pokmon \
   -destination 'platform=iOS Simulator,name=iPhone 17' 2>&1 \
   | grep -E "warning:.*(Sendable|concurrency|actor|isolated)" \
   | grep -v "/Pods/" | sort -u
