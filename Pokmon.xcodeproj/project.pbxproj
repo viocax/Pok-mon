@@ -64,6 +64,9 @@
 		B63CF0571010C840730A4627 /* PokemonDetailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9962F7E20605159135136D54 /* PokemonDetailStore.swift */; };
 		BCD7818E30904B69965F5E89 /* Stub.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4003C6C0D144AA585EF949B /* Stub.swift */; };
 		E777C1AF4B7740709E4D2BA6 /* Dependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DF2915FE7C4C5AA96D4796 /* Dependencies.swift */; };
+		B1C2D3E40001400080000001 /* PokemonAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E40001400080000002 /* PokemonAPIClient.swift */; };
+		B1C2D3E40001400080000003 /* FavoritesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E40001400080000004 /* FavoritesClient.swift */; };
+		B1C2D3E40001400080000005 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E40001400080000006 /* Recorder.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +88,9 @@
 
 /* Begin PBXFileReference section */
 		05DF2915FE7C4C5AA96D4796 /* Dependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dependencies.swift; sourceTree = "<group>"; };
+		B1C2D3E40001400080000002 /* PokemonAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonAPIClient.swift; sourceTree = "<group>"; };
+		B1C2D3E40001400080000004 /* FavoritesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesClient.swift; sourceTree = "<group>"; };
+		B1C2D3E40001400080000006 /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
 		0D35313B2B9C42AE00A995DE /* PokemonDeatilPageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokemonDeatilPageViewController.swift; sourceTree = "<group>"; };
 		0D3531422B9C558B00A995DE /* UIView+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIView+Extension.swift"; sourceTree = "<group>"; };
 		0D3531462B9C619500A995DE /* FavoriteUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteUseCase.swift; sourceTree = "<group>"; };
@@ -198,6 +204,7 @@
 			isa = PBXGroup;
 			children = (
 				0D3531452B9C618700A995DE /* UseCase */,
+				B1C2D3E40001400080000000 /* Client */,
 				64C766C92B99C7BF001A7A70 /* NetworkService */,
 				05DF2915FE7C4C5AA96D4796 /* Dependencies.swift */,
 				6484A4422B9F1295004C5E65 /* SpeciesUpdatable.swift */,
@@ -214,6 +221,15 @@
 				64C781792BA061FD00254A6F /* ListUseCase.swift */,
 			);
 			path = UseCase;
+			sourceTree = "<group>";
+		};
+		B1C2D3E40001400080000000 /* Client */ = {
+			isa = PBXGroup;
+			children = (
+				B1C2D3E40001400080000002 /* PokemonAPIClient.swift */,
+				B1C2D3E40001400080000004 /* FavoritesClient.swift */,
+			);
+			path = Client;
 			sourceTree = "<group>";
 		};
 		0DD0AB382B9DE811001A77EE /* List */ = {
@@ -306,6 +322,7 @@
 			children = (
 				64C781702BA0335200254A6F /* Mock */,
 				09DE5E18792E478DAEE1766C /* Stub */,
+				B1C2D3E40001400080000006 /* Recorder.swift */,
 				64C781682BA0330100254A6F /* CellViewModelTests.swift */,
 				64C781772BA035B200254A6F /* UserDefaultStoreTests.swift */,
 				BF0CF6E44A304C019C8B0D52 /* PokemonListStoreTests.swift */,
@@ -534,6 +551,8 @@
 			files = (
 				0D3531472B9C619500A995DE /* FavoriteUseCase.swift in Sources */,
 				E777C1AF4B7740709E4D2BA6 /* Dependencies.swift in Sources */,
+				B1C2D3E40001400080000001 /* PokemonAPIClient.swift in Sources */,
+				B1C2D3E40001400080000003 /* FavoritesClient.swift in Sources */,
 				64C766D42B99CA54001A7A70 /* PokemonListEndpont.swift in Sources */,
 				64C766E02B9AE5A0001A7A70 /* UIColor++Extension.swift in Sources */,
 				64C766CD2B99C7ED001A7A70 /* NetworkService.swift in Sources */,
@@ -585,6 +604,7 @@
 				64C7816F2BA0334B00254A6F /* MockFavoriteUseCase.swift in Sources */,
 				64C7816D2BA0333E00254A6F /* MockService.swift in Sources */,
 				BCD7818E30904B69965F5E89 /* Stub.swift in Sources */,
+				B1C2D3E40001400080000005 /* Recorder.swift in Sources */,
 				263EDB94AFB64BFD878B2D13 /* PokemonListStoreTests.swift in Sources */,
 				98E68D1ACFCE45A8B8B7F0D9 /* PokemonDetailStoreTests.swift in Sources */,
 				A1B2C3D40001400080000005 /* ObserveTests.swift in Sources */,

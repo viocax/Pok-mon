@@ -18,13 +18,6 @@ private final class ProbeModel {
 @MainActor
 private final class ProbeResponder: UIResponder {}
 
-/// 收集 `apply` 每次執行讀到的值。用 class 是因為 `apply` 是逃逸的。
-@MainActor
-private final class Recorder {
-    private(set) var values: [Int] = []
-    func record(_ value: Int) { values.append(value) }
-}
-
 @MainActor
 @Suite struct ObserveTests {
 
@@ -41,38 +34,38 @@ private final class Recorder {
     @Test func 掛載時立刻執行一次() {
         let model = ProbeModel()
         let responder = ProbeResponder()
-        let recorder = Recorder()
+        let recorder = Recorder<Int>()
 
         responder.observe { [weak model] in
             guard let model else { return }
             recorder.record(model.count)
         }
 
-        #expect(recorder.values == [0])
+        #expect(recorder.recorded == [0])
     }
 
     @Test func 屬性變動後會重新執行() async {
         let model = ProbeModel()
         let responder = ProbeResponder()
-        let recorder = Recorder()
+        let recorder = Recorder<Int>()
 
         responder.observe { [weak model] in
             guard let model else { return }
             recorder.record(model.count)
         }
-        #expect(recorder.values == [0])
+        #expect(recorder.recorded == [0])
 
         model.count = 1
-        let rearmed = await waitForRearm { recorder.values.count == 2 }
+        let rearmed = await waitForRearm { recorder.recorded.count == 2 }
 
         #expect(rearmed)
-        #expect(recorder.values == [0, 1])
+        #expect(recorder.recorded == [0, 1])
     }
 
     @Test func 連續變動每次都會重新執行() async {
         let model = ProbeModel()
         let responder = ProbeResponder()
-        let recorder = Recorder()
+        let recorder = Recorder<Int>()
 
         responder.observe { [weak model] in
             guard let model else { return }
@@ -80,49 +73,49 @@ private final class Recorder {
         }
 
         model.count = 1
-        _ = await waitForRearm { recorder.values.count == 2 }
+        _ = await waitForRearm { recorder.recorded.count == 2 }
         model.count = 2
-        let rearmed = await waitForRearm { recorder.values.count == 3 }
+        let rearmed = await waitForRearm { recorder.recorded.count == 3 }
 
         #expect(rearmed)
-        #expect(recorder.values == [0, 1, 2])
+        #expect(recorder.recorded == [0, 1, 2])
     }
 
     @Test func 取消後不再重新執行() async {
         let model = ProbeModel()
         let responder = ProbeResponder()
-        let recorder = Recorder()
+        let recorder = Recorder<Int>()
 
         let token = responder.observe { [weak model] in
             guard let model else { return }
             recorder.record(model.count)
         }
-        #expect(recorder.values == [0])
+        #expect(recorder.recorded == [0])
 
         token.cancel()
         model.count = 1
         // 給重新掛載的 Task 足夠機會執行，確認它真的沒有跑
         for _ in 0..<200 { await Task.yield() }
 
-        #expect(recorder.values == [0])
+        #expect(recorder.recorded == [0])
     }
 
     /// 觀察者被釋放後，重新掛載的鏈路要自然終止，不能無限續命。
     @Test func 觀察者釋放後停止重新掛載() async {
         let model = ProbeModel()
-        let recorder = Recorder()
+        let recorder = Recorder<Int>()
         var responder: ProbeResponder? = ProbeResponder()
 
         responder?.observe { [weak model] in
             guard let model else { return }
             recorder.record(model.count)
         }
-        #expect(recorder.values == [0])
+        #expect(recorder.recorded == [0])
 
         responder = nil
         model.count = 1
         for _ in 0..<200 { await Task.yield() }
 
-        #expect(recorder.values == [0])
+        #expect(recorder.recorded == [0])
     }
 }
