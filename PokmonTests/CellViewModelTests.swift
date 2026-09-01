@@ -5,112 +5,88 @@
 //  Created by drake on 2024/3/12.
 //
 
-import XCTest
-import RxSwift
-import RxTest
-import RxRelay
+import Testing
 @testable import Pokmon
 
-final class CellViewModelTests: XCTestCase {
+@MainActor
+@Suite struct CellViewModelTests {
 
-    
-    var disposeBag = DisposeBag()
-    var viewModel: CellViewModel!
-    var expectName: String {
-        return "testNamePokeMon"
-    }
-    var expectThumbnail: String {
-        return "https://pokeapi.co/api/v2/pokemon.png"
-    }
     let expectNumber = 3
-    
-    override func setUp() {
-        super.setUp()
-        disposeBag = .init()
-        // Mock dependency
-        let mockNetworkService = MockService()
-        
-        let mockSource = try! PokemonListResponse.Item(.init(name: "mockName", url: "https://pokeapi.co/api/v2/pokemon/\(expectNumber)"))
-        let mockDependency = CellViewModel.Dependency(source: mockSource, service: mockNetworkService)
+    let expectName = "testNamePokeMon"
+    let expectThumbnail = "https://pokeapi.co/api/v2/pokemon.png"
 
-        let mockPokemon = PokmonResponse(id: expectNumber, name: expectName, height: 111, weight: 22, sprites: .init(thumbnail: expectThumbnail), species: .init(name: "TestName", url: "TestName"), types: [], stats: [])
-
-        mockNetworkService.injectRequest = .just(mockPokemon)
-
-        viewModel = CellViewModel(dependency: mockDependency)
+    private func makePokemon() -> PokmonResponse {
+        .init(
+            id: expectNumber,
+            name: expectName,
+            height: 111,
+            weight: 22,
+            sprites: .init(thumbnail: expectThumbnail),
+            species: .init(name: "TestName", url: "TestName"),
+            types: [],
+            stats: []
+        )
     }
- 
-    func test_cellViewModel() {
-        let testScheduler = TestScheduler(initialClock: .zero)
 
-        let bindView = testScheduler.createColdObservable([
-            .next(100, ())
-        ])
+    @Test func 載入前後的輸出() async throws {
+        let service = MockService()
+        service.injectAsyncResponse = makePokemon()
+        let viewModel = CellViewModel(source: try Stub.item(expectNumber), service: service)
 
+        #expect(viewModel.numberText == "No.\(expectNumber)")
+        #expect(viewModel.displayName == "")
+        #expect(viewModel.imageURL == nil)
 
-        let input = CellViewModel
-            .Input(bindView: bindView.asDriver(onErrorDriveWith: .empty()))
+        viewModel.bindView()
+        await viewModel.loadTask?.value
 
-        let output = viewModel.transform(input)
-
-        let observerNumber = testScheduler.createObserver(String.self)
-        output.number
-            .drive(observerNumber)
-            .disposed(by: disposeBag)
-        let observerName = testScheduler.createObserver(String.self)
-        output.name
-            .drive(observerName)
-            .disposed(by: disposeBag)
-        let observerImageURL = testScheduler.createObserver(String.self)
-        output.imageURL
-            .drive(observerImageURL)
-            .disposed(by: disposeBag)
-        let observerTypes = testScheduler.createObserver([TypeCornerProtocol].self)
-        output.types
-            .drive(observerTypes)
-            .disposed(by: disposeBag)
-
-
-        testScheduler.start()
-
-        XCTAssertEqual(observerName.events, [
-            .next(100, "Loading..."),
-            .next(100, expectName)
-        ])
-
-        XCTAssertEqual(observerNumber.events, [
-            .next(100, "No.\(expectNumber)")
-        ])
-        XCTAssertEqual(observerImageURL.events, [
-            .next(100, expectThumbnail)
-        ])
-        observerTypes.events.forEach { record in
-            XCTAssertEqual(record.time, 100)
-            XCTAssertTrue(record.value.element!.isEmpty)
-        }
+        #expect(viewModel.displayName == expectName)
+        #expect(viewModel.imageURL == expectThumbnail)
+        #expect(viewModel.types.isEmpty)
+        #expect(viewModel.isLoading == false)
     }
-    func test_viewModel_PokemonShareData() {
-        
-        do {
-            let _ = try viewModel.getPokemon()
-        } catch {
-            switch error as? PkError {
-            case .pokemonDataNotYet:
-                XCTAssertTrue(true)
-            default:
-                XCTFail()
-            }
+
+    @Test func 已有pokemon時不重複請求() async throws {
+        let service = MockService()
+        let viewModel = CellViewModel(
+            source: try Stub.item(expectNumber),
+            service: service,
+            pokemon: makePokemon()
+        )
+
+        viewModel.bindView()
+        await viewModel.loadTask?.value
+
+        #expect(service.requestedPaths.isEmpty)
+        #expect(viewModel.displayName == expectName)
+    }
+
+    @Test func pokemon尚未載入時getPokemon拋錯() throws {
+        let viewModel = CellViewModel(source: try Stub.item(expectNumber))
+
+        #expect(throws: PkError.self) {
+            try viewModel.getPokemon()
         }
-        let mockSource = try! PokemonListResponse.Item(.init(name: "mockName", url: "https://pokeapi.co/api/v2/pokemon/\(expectNumber)"))
-        let mockPokemon = PokmonResponse(id: expectNumber, name: expectName, height: 111, weight: 22, sprites: .init(thumbnail: expectThumbnail), species: .init(name: "TestName", url: "TestName"), types: [], stats: [])
-        viewModel = .init(dependency: .init(sepies: nil, pokemon: mockPokemon, source: mockSource))
-        do {
-            let model = try viewModel.getPokemon()
-            XCTAssertEqual(model.id, mockPokemon.id)
-        } catch {
-            XCTFail(error.localizedDescription + ", test fail")
-        }
-        XCTAssertNil(viewModel.spiecs)
-        XCTAssertEqual(viewModel.number, expectNumber)
+        #expect(viewModel.spiecs == nil)
+        #expect(viewModel.number == expectNumber)
+    }
+
+    @Test func pokemon已載入時getPokemon回傳() throws {
+        let pokemon = makePokemon()
+        let viewModel = CellViewModel(
+            source: try Stub.item(expectNumber),
+            pokemon: pokemon
+        )
+
+        #expect(try viewModel.getPokemon().id == pokemon.id)
+    }
+
+    @Test func updateDetailPage寫入species() throws {
+        let viewModel = CellViewModel(source: try Stub.item(expectNumber))
+        #expect(viewModel.spiecs == nil)
+
+        viewModel.updateDetailPage(response: Stub.species())
+
+        #expect(viewModel.spiecs != nil)
     }
 }

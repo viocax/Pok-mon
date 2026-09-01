@@ -32,9 +32,9 @@ import Testing
         service.injectAsyncResponse = try Stub.listResponse(numbers: [1, 2, 3], nextOffset: 20)
         let list = MockListUseCase()
         list.injectCellViewModels = [
-            CellViewModel(dependency: .init(source: try Stub.item(1))),
-            CellViewModel(dependency: .init(source: try Stub.item(2))),
-            CellViewModel(dependency: .init(source: try Stub.item(3)))
+            CellViewModel(source: try Stub.item(1)),
+            CellViewModel(source: try Stub.item(2)),
+            CellViewModel(source: try Stub.item(3))
         ]
         let favorite = MockFavoriteUseCase()
         favorite.injectIsContain = false
@@ -66,7 +66,7 @@ import Testing
         let service = MockService()
         service.injectAsyncResponse = try Stub.listResponse(numbers: [1], nextOffset: nil)
         let list = MockListUseCase()
-        list.injectCellViewModels = [CellViewModel(dependency: .init(source: try Stub.item(1)))]
+        list.injectCellViewModels = [CellViewModel(source: try Stub.item(1))]
 
         let store = makeStore(service: service, list: list)
         store.send(.onAppear)
@@ -86,8 +86,8 @@ import Testing
         service.injectAsyncResponse = try Stub.listResponse(numbers: [1, 2], nextOffset: 20)
         let list = MockListUseCase()
         list.injectCellViewModels = [
-            CellViewModel(dependency: .init(source: try Stub.item(1))),
-            CellViewModel(dependency: .init(source: try Stub.item(2)))
+            CellViewModel(source: try Stub.item(1)),
+            CellViewModel(source: try Stub.item(2))
         ]
         let favorite = MockFavoriteUseCase()
         favorite.injectIsContain = false
@@ -135,7 +135,7 @@ import Testing
     @Test func 點選cell後把species回填() async throws {
         let coordinator = MockCoordinator()
         coordinator.injectShowDetailPageAsync = Stub.species(cnName: "皮卡丘")
-        let cell = CellViewModel(dependency: .init(source: try Stub.item(25)))
+        let cell = CellViewModel(source: try Stub.item(25))
         #expect(cell.spiecs == nil)
 
         let store = makeStore(coordinator: coordinator)

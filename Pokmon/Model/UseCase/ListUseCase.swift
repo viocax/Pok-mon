@@ -8,13 +8,13 @@
 import Foundation
 
 protocol ListUsecase: Sendable {
+    @MainActor
     func listConvertCell(_ items: [PokemonListResponse.Item]) -> [CellViewModel]
 }
 
 struct ListUseCaseImp: ListUsecase {
+    @MainActor
     func listConvertCell(_ items: [PokemonListResponse.Item]) -> [CellViewModel] {
-        return items.map { item in
-            return CellViewModel(dependency: .init(source: item))
-        }
+        items.map { CellViewModel(source: $0) }
     }
 }

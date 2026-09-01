@@ -5,112 +5,119 @@
 //  Created by drake on 2024/3/8.
 //
 
-import RxSwift
-import RxCocoa
+import Foundation
+import Observation
 
+/// diffable data source 的 item identifier,所以 `==` 與 `hash` 只能看不變的 `number`。
+/// 資料載入完成時 snapshot 因此不會變,cell 不會被重建——重刷改由 cell `observe`
+/// 這個型別的可變屬性達成,取代原本 Rx `drive` 直接推值進 label 的做法。
+@Observable
+@MainActor
 final class CellViewModel {
-    private let dependency: Dependency
-    init(dependency: Dependency) {
-        self.dependency = dependency
+
+    nonisolated let number: Int
+
+    private(set) var pokemon: PokmonResponse?
+    private(set) var sepies: PokemonSpeciesResponse?
+    private(set) var isLoading: Bool = false
+    private(set) var loadTask: Task<Void, Never>?
+
+    private let source: PokemonListResponse.Item
+    private let service: any NetworkService
+
+    init(
+        source: PokemonListResponse.Item,
+        service: any NetworkService = Dependencies.network,
+        sepies: PokemonSpeciesResponse? = nil,
+        pokemon: PokmonResponse? = nil
+    ) {
+        self.number = source.number
+        self.source = source
+        self.service = service
+        self.sepies = sepies
+        self.pokemon = pokemon
+    }
+
+    // MARK: - Output
+
+    var numberText: String {
+        "No.\(number)"
+    }
+
+    var displayName: String {
+        if let pokemon {
+            return pokemon.name
+        }
+        return isLoading ? "Loading..." : ""
+    }
+
+    var imageURL: String? {
+        pokemon?.sprites.thumbnail
+    }
+
+    var types: [any TypeCornerProtocol] {
+        pokemon?.types.map(\.type) ?? []
+    }
+
+    // MARK: - Input
+
+    func bindView() {
+        guard pokemon == nil, loadTask == nil else { return }
+
+        loadTask = Task { [weak self] in
+            guard let self else { return }
+
+            self.isLoading = true
+            defer { if !Task.isCancelled { self.isLoading = false } }
+
+            let response = try? await self.service.request(PokemonEndpoint(id: "\(self.number)"))
+            guard !Task.isCancelled else { return }
+
+            self.pokemon = response
+        }
+    }
+
+    func cancel() {
+        loadTask?.cancel()
+        loadTask = nil
     }
 }
 
-extension CellViewModel {
-    class Dependency {
-        var number: Int {
-            return source.number
-        }
-        var sepies: PokemonSpeciesResponse?
-        var pokemon: PokmonResponse?
-        let source: PokemonListResponse.Item
-        let service: any NetworkService
+// MARK: - Hashable
 
-        init(
-            sepies: PokemonSpeciesResponse? = nil,
-            pokemon: PokmonResponse? = nil,
-            source: PokemonListResponse.Item,
-            service: any NetworkService = Dependencies.network
-        ) {
-            self.sepies = sepies
-            self.pokemon = pokemon
-            self.source = source
-            self.service = service
-        }
-    }
-    struct Input {
-        let bindView: Driver<Void>
-    }
-    struct Output {
-        let number: Driver<String>
-        let name: Driver<String>
-        let imageURL: Driver<String>
-        let types: Driver<[TypeCornerProtocol]>
-    }
-    func transform(_ input: Input) -> Output {
-        let hudTracker = HUDTracker()
-        let number = self.dependency.source.number
+extension CellViewModel: Hashable {
 
-        let pokemon = input.bindView
-            .flatMap {
-                guard let pokemon = self.dependency.pokemon else {
-                    return self.dependency.service
-                        .request(PokemonEndpoint(id: "\(number)"))
-                        .trackActivity(hudTracker)
-                        .do(onNext: { response in
-                            self.dependency.pokemon = response
-                        })
-                        .asDriver(onErrorDriveWith: .empty())
-                }
-                return .just(pokemon)
-            }
+    /// 兩者都必須看同一個不變欄位,而且必須 nonisolated——`Hashable` 的需求不是
+    /// MainActor 隔離的,碰不到 `pokemon` 這類可變狀態。
+    nonisolated static func == (lhs: CellViewModel, rhs: CellViewModel) -> Bool {
+        lhs.number == rhs.number
+    }
 
-        let getTypes = pokemon
-            .map { response -> [any TypeCornerProtocol] in
-                return response.types.map(\.type)
-            }
-        let loading = hudTracker.distinctUntilChanged()
-            .compactMap {
-                return $0 ? "Loading..." : nil
-            }
-            
-        let name = Driver
-            .merge(
-                loading,
-                pokemon.map { $0.name }
-            )
-        let numberOutput = input.bindView
-            .map { "No.\(number)" }
-        
-        return .init(
-            number: numberOutput,
-            name:  name,
-            imageURL: pokemon.map(\.sprites.thumbnail),
-            types: getTypes
-        )
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(number)
     }
 }
+
+// MARK: - SpeciesUpdatable
 
 extension CellViewModel: SpeciesUpdatable {
     func updateDetailPage(response sepies: PokemonSpeciesResponse) {
-        self.dependency.sepies = sepies
+        self.sepies = sepies
     }
 }
 
-extension CellViewModel: PokemonShareData, Equatable {
-    static func == (lhs: CellViewModel, rhs: CellViewModel) -> Bool {
-        return lhs.dependency.number == rhs.dependency.number
-    }
-    
-    var number: Int {
-        return dependency.number
-    }
+// MARK: - PokemonShareData
+
+extension CellViewModel: PokemonShareData {
+
     func getPokemon() throws -> PokmonResponse {
-        guard let pokemon = self.dependency.pokemon else {
+        guard let pokemon else {
             throw PkError.pokemonDataNotYet
         }
         return pokemon
     }
+
     var spiecs: PokemonSpeciesResponse? {
-        return dependency.sepies
+        sepies
     }
 }
