@@ -2253,7 +2253,23 @@ nonisolated deinit 碰不到非 Sendable 的 closure,改用 isolated deinit。"
 
 | 章 | 檔案 | 對應 Task | 必須包含的重點 |
 |---|---|---|---|
-| 6 | `06-combine-to-observation.md` | Task 3、4、5 | `withObservationTracking` 只通知一次，所以要自我重新掛載；`onChange` 是 willSet 語義，得丟進 `Task` 才讀得到新值；`observe` 為何必須掛 `UIResponder` 而非 `NSObject`；**保留單一 `State` struct 的代價**——所有 closure 一起重跑，逐一檢查冪等性，只有 `presentAlert` 需要擋 |
+| 6 | `06-combine-to-observation.md` | Task 3、4、5 | `withObservationTracking` 只通知一次，所以要自我重新掛載；`onChange` 是 willSet 語義，得丟進 `Task` 才讀得到新值；`observe` 為何必須掛 `UIResponder` 而非 `NSObject`；**捕捉契約**——`apply` 強捕捉被觀察物件會形成 `物件 → registrar → onChange → apply → 物件` 的自持環，且 `cancel()` 擋不掉已註冊未觸發的那一次；**保留單一 `State` struct 的代價**——所有 closure 一起重跑，逐一檢查冪等性，只有 `presentAlert` 需要擋 |
+
+第 6 章必須包含這個實際踩到的案例，它是本次遷移最好的教材：
+
+**「以為只是換寫法，其實換掉了行為」——alert 去重。** 舊的 Combine 寫法是
+`state.compactMap(\.alert).removeDuplicates()`，去重只作用在**非 nil 的子串流**上，
+所以中間那個 `nil` 對 `removeDuplicates` 是隱形的，它看到的是 `[A, A]` 而把第二個
+吃掉。換成 Observation 後用 `presentedAlert` 擋重複，而它在 `alert` 變回 `nil` 時
+會重設，於是第二個相同的 alert 會彈出來。
+
+兩者行為不同，而且在詳情頁是**真實可達**的路徑：`dismissAlert` 會觸發 `load()`
+重試，所以「錯誤 → 按 OK → 重試又失敗 → 相同錯誤」會走到。舊寫法下使用者按了
+OK 之後畫面毫無反應——那是 Combine 運算子語意造成的靜默失敗，新寫法反而修好了。
+
+這個差異沒有任何測試抓得到（8 個特徵測試全部照樣通過），是 code review 時逐行
+推導運算子語意才發現的。講稿要誠實說明：**遷移時「行為不變」是需要證明的主張，
+不是預設。**
 | 7 | `07-cell-last-mile.md` | Task 6 | diffable 的 item identifier 是可變 class 會發生什麼事：`==`/`hash` 只能看不變欄位 → snapshot 不變 → cell 不重建 → Rx 的 `drive` 一拿掉畫面就停在 Loading。解法是讓 view model 自己 `@Observable`。**必須誠實寫出這個型別身兼三職（identifier、發請求的 view model、跨頁資料包）的張力，以及「拆成 ID + 值型別、讀取收進 Store」是下一步可以走的路** |
 | 8 | `08-drop-di-container.md` | Task 1 | Swinject 換 `@TaskLocal`；為什麼要在 `Dependency.init` 快照而不是每次存取才讀；`Task.detached` 不繼承 TaskLocal 的坑；`FavoriteUseCase` 為何選 `OSAllocatedUnfairLock` 而不是 actor（改 async 會污染 Store 的同步流程） |
 
