@@ -21,7 +21,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // setup rootWindow
         self.window = .init(windowScene: scene)
         let coordinator = Coordinator()
-        let store = PokemonListStore(dependency: .init(coordinator: coordinator))
+        let store = PokemonListStore(coordinator: coordinator)
         let viewController = PokemonListViewController(store: store)
         coordinator.viewController = viewController
         self.window?.rootViewController = UINavigationController(rootViewController: viewController)
@@ -43,7 +43,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
-        Dependencies.favorite.synchronize()
+        Dependencies.favorites.synchronize()
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {

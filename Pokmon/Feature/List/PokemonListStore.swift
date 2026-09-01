@@ -16,7 +16,9 @@ final class PokemonListStore {
 
     private(set) var viewState: State = .init()
 
-    private let dependency: Dependency
+    private let api: PokemonAPIClient
+    private let favorites: FavoritesClient
+    private let coordinator: Coordinator
 
     /// `private(set)` 是為了讓測試能 await 到非同步流程結束
     private(set) var loadTask: Task<Void, Never>?
@@ -24,8 +26,15 @@ final class PokemonListStore {
 
     // MARK: - Life cycle
 
-    init(dependency: Dependency) {
-        self.dependency = dependency
+    /// `api` 與 `favorites` 的預設參數是唯一的快照點——`@TaskLocal` 只能在這裡讀。
+    init(
+        coordinator: Coordinator,
+        api: PokemonAPIClient = Dependencies.api,
+        favorites: FavoritesClient = Dependencies.favorites
+    ) {
+        self.coordinator = coordinator
+        self.api = api
+        self.favorites = favorites
     }
 
     // MARK: - Input
@@ -71,12 +80,15 @@ final class PokemonListStore {
             defer { if !Task.isCancelled { self.viewState.isLoading = false } }
 
             do {
-                let response: PokemonListResponse = try await self.dependency.service
-                    .request(PokemonListEndpont(offset: offset))
+                let response = try await self.api.list(offset)
                 guard !Task.isCancelled else { return }
 
                 self.viewState.nextOffset = response.offset
-                self.viewState.cells += self.dependency.list.listConvertCell(response.results)
+                // api 必須顯式傳下去。若靠 CellViewModel 的預設值，這裡會讀到
+                // Dependencies.api 也就是 live 實作 —— 測試就會打真實網路。
+                self.viewState.cells += response.results.map {
+                    CellViewModel(source: $0, api: self.api)
+                }
                 self.syncFavorites()
             } catch {
                 // 取消時丟的不一定是 CancellationError,判斷旗標不要比對型別
@@ -92,7 +104,7 @@ final class PokemonListStore {
         detailTask = Task { [weak self] in
             guard let self else { return }
 
-            let species = await self.dependency.coordinator.showDetailPage(model: cell)
+            let species = await self.coordinator.showDetailPage(model: cell)
             guard !Task.isCancelled, let species else { return }
 
             cell.updateDetailPage(response: species)
@@ -103,7 +115,7 @@ final class PokemonListStore {
         viewState.favoriteNumbers = Set(
             viewState.cells
                 .map(\.number)
-                .filter { dependency.favorite.isContain("\($0)") }
+                .filter { favorites.contains($0) }
         )
     }
 }
@@ -144,22 +156,4 @@ extension PokemonListStore {
         case dismissAlert
     }
 
-    struct Dependency {
-        let service: any NetworkService
-        let favorite: any FavoriteUseCase
-        let list: any ListUsecase
-        let coordinator: Coordinator
-
-        init(
-            coordinator: Coordinator,
-            service: any NetworkService = Dependencies.network,
-            favorite: any FavoriteUseCase = Dependencies.favorite,
-            list: any ListUsecase = Dependencies.list
-        ) {
-            self.coordinator = coordinator
-            self.service = service
-            self.favorite = favorite
-            self.list = list
-        }
-    }
 }

@@ -11,49 +11,59 @@ import Testing
 @MainActor
 @Suite struct PokemonListStoreTests {
 
+    /// 未指定的 closure 給明確拋錯的實作，誤呼叫時測試會紅而不是靜默通過。
+    private func makeAPI(
+        list: @escaping @Sendable (Int) async throws -> PokemonListResponse = { _ in
+            throw PkError.badRequest
+        }
+    ) -> PokemonAPIClient {
+        .init(
+            list: list,
+            pokemon: { _ in throw PkError.badRequest },
+            species: { _ in throw PkError.badRequest }
+        )
+    }
+
+    /// `contains` 讀一個可變的旗標，讓測試中途能翻轉收藏狀態。
+    private func makeFavorites(
+        contains: @escaping @Sendable (Int) -> Bool = { _ in false }
+    ) -> FavoritesClient {
+        .init(
+            contains: contains,
+            add: { _ in },
+            remove: { _ in },
+            synchronize: { }
+        )
+    }
+
     private func makeStore(
-        service: MockService? = nil,
-        favorite: MockFavoriteUseCase = .init(),
-        list: MockListUseCase = .init(),
+        api: PokemonAPIClient? = nil,
+        favorites: FavoritesClient? = nil,
         coordinator: MockCoordinator = .init()
     ) -> PokemonListStore {
         PokemonListStore(
-            dependency: .init(
-                coordinator: coordinator,
-                service: service ?? MockService(),
-                favorite: favorite,
-                list: list
-            )
+            coordinator: coordinator,
+            api: api ?? makeAPI(),
+            favorites: favorites ?? makeFavorites()
         )
     }
 
     @Test func 載入成功時填入cells與nextOffset() async throws {
-        let service = MockService()
-        service.injectAsyncResponse = try Stub.listResponse(numbers: [1, 2, 3], nextOffset: 20)
-        let list = MockListUseCase()
-        list.injectCellViewModels = [
-            CellViewModel(source: try Stub.item(1)),
-            CellViewModel(source: try Stub.item(2)),
-            CellViewModel(source: try Stub.item(3))
-        ]
-        let favorite = MockFavoriteUseCase()
-        favorite.injectIsContain = false
-
-        let store = makeStore(service: service, favorite: favorite, list: list)
+        let store = makeStore(
+            api: makeAPI(list: { _ in try Stub.listResponse(numbers: [1, 2, 3], nextOffset: 20) })
+        )
         store.send(.onAppear)
         await store.loadTask?.value
 
-        #expect(store.viewState.cells.count == 3)
+        // 走真實映射，所以可以直接斷言編號 —— 比原本只數 count 更強
+        #expect(store.viewState.cells.map(\.number) == [1, 2, 3])
         #expect(store.viewState.nextOffset == 20)
         #expect(store.viewState.isLoading == false)
         #expect(store.viewState.alert == nil)
     }
 
     @Test func 載入失敗時設定alert() async throws {
-        let service = MockService()
-        service.injectAsyncError = PkError.badRequest
-
-        let store = makeStore(service: service)
+        let store = makeStore(api: makeAPI(list: { _ in throw PkError.badRequest }))
         store.send(.onAppear)
         await store.loadTask?.value
 
@@ -63,47 +73,44 @@ import Testing
     }
 
     @Test func 已經到底時loadMore不再發請求() async throws {
-        let service = MockService()
-        service.injectAsyncResponse = try Stub.listResponse(numbers: [1], nextOffset: nil)
-        let list = MockListUseCase()
-        list.injectCellViewModels = [CellViewModel(source: try Stub.item(1))]
-
-        let store = makeStore(service: service, list: list)
+        let calls = Recorder<Int>()
+        let store = makeStore(
+            api: makeAPI(list: { offset in
+                calls.record(offset)
+                return try Stub.listResponse(numbers: [1], nextOffset: nil)
+            })
+        )
         store.send(.onAppear)
         await store.loadTask?.value
         #expect(store.viewState.nextOffset == nil)
         #expect(store.viewState.hasNextPage == false)
+        #expect(calls.count == 1)
 
-        let countAfterFirstLoad = service.requestedPaths.count
         store.send(.loadMore)
         await store.loadTask?.value
 
-        #expect(service.requestedPaths.count == countAfterFirstLoad)
+        #expect(calls.count == 1)
     }
 
     @Test func 收藏過濾會改變displayCells() async throws {
-        let service = MockService()
-        service.injectAsyncResponse = try Stub.listResponse(numbers: [1, 2], nextOffset: 20)
-        let list = MockListUseCase()
-        list.injectCellViewModels = [
-            CellViewModel(source: try Stub.item(1)),
-            CellViewModel(source: try Stub.item(2))
-        ]
-        let favorite = MockFavoriteUseCase()
-        favorite.injectIsContain = false
-
-        let store = makeStore(service: service, favorite: favorite, list: list)
+        let isFavorite = Recorder<Bool>()
+        // 用 Recorder 當可變旗標：record 一個值代表「之後都回傳這個」
+        isFavorite.record(false)
+        let store = makeStore(
+            api: makeAPI(list: { _ in try Stub.listResponse(numbers: [1, 2], nextOffset: 20) }),
+            favorites: makeFavorites(contains: { _ in isFavorite.recorded.last ?? false })
+        )
         store.send(.onAppear)
         await store.loadTask?.value
-        #expect(store.viewState.displayCells.count == 2)
+        #expect(store.viewState.displayCells.map(\.number) == [1, 2])
 
-        favorite.injectIsContain = true
+        isFavorite.record(true)
         store.send(.tapFavorite)
 
         #expect(store.viewState.isFavoriteFilterOn == true)
-        #expect(store.viewState.displayCells.count == 2)
+        #expect(store.viewState.displayCells.map(\.number) == [1, 2])
 
-        favorite.injectIsContain = false
+        isFavorite.record(false)
         store.send(.tapFavorite)
         store.send(.tapFavorite)
 
@@ -120,10 +127,7 @@ import Testing
     }
 
     @Test func dismissAlert清除alert() async throws {
-        let service = MockService()
-        service.injectAsyncError = PkError.badRequest
-
-        let store = makeStore(service: service)
+        let store = makeStore(api: makeAPI(list: { _ in throw PkError.badRequest }))
         store.send(.onAppear)
         await store.loadTask?.value
         #expect(store.viewState.alert != nil)
@@ -132,10 +136,39 @@ import Testing
         #expect(store.viewState.alert == nil)
     }
 
+    /// 釘住「Store 把自己的 api 傳給了它建立的 CellViewModel」。
+    ///
+    /// 少了這個測試，`load()` 內漏傳 `api` 不會被任何東西抓到：cell 會退回
+    /// `CellViewModel` 的預設值也就是 `Dependencies.api`（live 實作），app 照樣
+    /// 正常，而 Store 的其他測試都不呼叫 `bindView()`。後果是別人的測試會安靜地
+    /// 打真實網路。
+    @Test func Store把自己的api傳給cell() async throws {
+        let calls = Recorder<Int>()
+        let store = makeStore(
+            api: .init(
+                list: { _ in try Stub.listResponse(numbers: [7], nextOffset: nil) },
+                pokemon: { id in calls.record(id); return Stub.pokemon(id: id) },
+                species: { _ in throw PkError.badRequest }
+            )
+        )
+        store.send(.onAppear)
+        await store.loadTask?.value
+
+        let cell = try #require(store.viewState.cells.first)
+        cell.bindView()
+        await cell.loadTask?.value
+
+        #expect(calls.recorded == [7])
+        #expect(cell.pokemon?.id == 7)
+    }
+
     @Test func 點選cell後把species回填() async throws {
         let coordinator = MockCoordinator()
         coordinator.injectShowDetailPageAsync = Stub.species(cnName: "皮卡丘")
-        let cell = CellViewModel(source: try Stub.item(25))
+        let cell = CellViewModel(
+            source: try Stub.item(25),
+            api: makeAPI()
+        )
         #expect(cell.spiecs == nil)
 
         let store = makeStore(coordinator: coordinator)
