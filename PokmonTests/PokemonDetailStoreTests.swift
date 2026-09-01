@@ -13,14 +13,14 @@ import Testing
 
     private func makeStore(
         spiecs: PokemonSpeciesResponse? = nil,
-        service: MockService = .init(),
+        service: MockService? = nil,
         favorite: MockFavoriteUseCase = .init()
     ) -> PokemonDetailStore {
         PokemonDetailStore(
             dependency: .init(
                 spiecs: spiecs,
                 pokemon: Stub.pokemon(id: 1),
-                service: service,
+                service: service ?? MockService(),
                 favorite: favorite
             )
         )

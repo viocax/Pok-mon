@@ -12,7 +12,7 @@ import Testing
 @Suite struct PokemonListStoreTests {
 
     private func makeStore(
-        service: MockService = .init(),
+        service: MockService? = nil,
         favorite: MockFavoriteUseCase = .init(),
         list: MockListUseCase = .init(),
         coordinator: MockCoordinator = .init()
@@ -20,7 +20,7 @@ import Testing
         PokemonListStore(
             dependency: .init(
                 coordinator: coordinator,
-                service: service,
+                service: service ?? MockService(),
                 favorite: favorite,
                 list: list
             )

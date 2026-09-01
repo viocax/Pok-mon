@@ -8,8 +8,8 @@
 import Foundation
 import Alamofire
 
-protocol Endpoint {
-    associatedtype Model: Codable
+protocol Endpoint: Sendable {
+    associatedtype Model: Codable & Sendable
     var baseURL: String { get }
     var path: String { get }
     var httpMethod: HTTPMethod { get }
