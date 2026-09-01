@@ -105,6 +105,23 @@ import Testing
         #expect(favorite.recordInsert == 0)
     }
 
+    /// 釘住「依儲存決定方向，而不是依畫面上的快取狀態」。
+    /// 少了這個情境，把 toggleFavorite 改成看 viewState.isFavorite 也不會被抓到。
+    @Test func 儲存與畫面狀態分歧時依儲存決定方向() {
+        let favorite = MockFavoriteUseCase()
+        favorite.injectIsContain = false
+
+        let store = makeStore(favorite: favorite)
+        #expect(store.viewState.isFavorite == false)
+
+        // 製造分歧：畫面說未收藏，儲存說已收藏
+        favorite.injectIsContain = true
+        store.send(.tapFavorite(1))
+
+        #expect(favorite.recordRemove == 1)
+        #expect(favorite.recordInsert == 0)
+    }
+
     @Test func viewWillDisappear觸發synchronize() {
         let favorite = MockFavoriteUseCase()
         let store = makeStore(favorite: favorite)

@@ -819,6 +819,23 @@ import Testing
         #expect(favorite.recordInsert == 0)
     }
 
+    /// 釘住「依儲存決定方向,而不是依畫面上的快取狀態」。
+    /// 少了這個情境,把 toggleFavorite 改成看 viewState.isFavorite 也不會被抓到。
+    @Test func 儲存與畫面狀態分歧時依儲存決定方向() {
+        let favorite = MockFavoriteUseCase()
+        favorite.injectIsContain = false
+
+        let store = makeStore(favorite: favorite)
+        #expect(store.viewState.isFavorite == false)
+
+        // 製造分歧:畫面說未收藏,儲存說已收藏
+        favorite.injectIsContain = true
+        store.send(.tapFavorite(1))
+
+        #expect(favorite.recordRemove == 1)
+        #expect(favorite.recordInsert == 0)
+    }
+
     @Test func viewWillDisappear觸發synchronize() {
         let favorite = MockFavoriteUseCase()
         let store = makeStore(favorite: favorite)
@@ -833,7 +850,7 @@ import Testing
 - [ ] **Step 6: 執行完整測試**
 
 Run: TEST
-Expected: TEST SUCCEEDED，兩個新 Suite 共 14 個測試全部通過（List 7 個、Detail 7 個）
+Expected: TEST SUCCEEDED，兩個新 Suite 共 15 個測試全部通過（List 7 個、Detail 8 個）
 
 - [ ] **Step 7: Commit**
 
@@ -2206,7 +2223,7 @@ nonisolated deinit 碰不到非 Sendable 的 closure,改用 isolated deinit。"
 
 - [ ] **Step 1: 寫索引頁**
 
-`docs/uikit-to-concurrency/README.md` 需包含：講稿目的、適用對象、專案在遷移前後的數字對照（pod 數 7 → 2、Rx 檔案數 9 → 0、Store 測試覆蓋 0 → 14 個測試）、以及 11 章的連結與各章對應的 commit hash。
+`docs/uikit-to-concurrency/README.md` 需包含：講稿目的、適用對象、專案在遷移前後的數字對照（pod 數 7 → 2、Rx 檔案數 9 → 0、Store 測試覆蓋 0 → 15 個測試）、以及 11 章的連結與各章對應的 commit hash。
 
 - [ ] **Step 2: 寫第 1–5 章（回顧既有 commit）**
 
