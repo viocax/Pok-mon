@@ -19,11 +19,15 @@ class GenderImageCollectionCell: UICollectionViewCell {
 
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Initialization code
-        genderImageView.contentMode = .scaleAspectFit
-        iconImageView.contentMode = .scaleAspectFit
-        iconImageView.image = .placeHolder
-        iconImageView.rotate()
+        // `awakeFromNib()` 來自 NSObject，UIKit 沒有把它標成 @MainActor，
+        // 所以即使這個類別本身是 MainActor 隔離的，覆寫的主體仍被視為 nonisolated。
+        // nib 載入依契約在主執行緒發生，這個假設不是賭。
+        MainActor.assumeIsolated {
+            genderImageView.contentMode = .scaleAspectFit
+            iconImageView.contentMode = .scaleAspectFit
+            iconImageView.image = .placeHolder
+            iconImageView.rotate()
+        }
     }
 
     override func prepareForReuse() {
