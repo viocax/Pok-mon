@@ -17,10 +17,4 @@ enum Dependencies {
 
     @TaskLocal static var api: PokemonAPIClient = .live
     @TaskLocal static var favorites: FavoritesClient = .live
-
-    // MARK: - 以下三項正在被上面兩個 Client 取代，最後一步會移除
-
-    @TaskLocal static var network: any NetworkService = APIService.share
-    @TaskLocal static var favorite: any FavoriteUseCase = UserDefaultStore.shared
-    @TaskLocal static var list: any ListUsecase = ListUseCaseImp()
 }

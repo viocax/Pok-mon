@@ -1,5 +1,5 @@
 //
-//  FavoriteUseCase.swift
+//  UserDefaultStore.swift
 //  Pokmon
 //
 //  Created by Jie liang Huang on 2024/3/9.
@@ -8,15 +8,7 @@
 import Foundation
 import os
 
-protocol FavoriteUseCase: AnyObject, Sendable {
-    func insert(_ element: String)
-    func isContain(_ element: String) -> Bool
-    func remove(_ element: String)
-    var isEmpty: Bool { get }
-    func synchronize()
-}
-
-final class UserDefaultStore: FavoriteUseCase {
+final class UserDefaultStore: Sendable {
 
     static let shared: UserDefaultStore = .init()
 
@@ -29,10 +21,6 @@ final class UserDefaultStore: FavoriteUseCase {
         self.userDefault = userDefault
         self.key = key
         self.collection = .init(initialState: Set(userDefault.stringArray(forKey: key) ?? []))
-    }
-
-    var isEmpty: Bool {
-        collection.withLock(\.isEmpty)
     }
 
     func insert(_ element: String) {

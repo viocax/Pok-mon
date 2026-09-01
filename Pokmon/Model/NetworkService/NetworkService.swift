@@ -8,14 +8,10 @@
 import Alamofire
 import Foundation
 
-protocol NetworkService: Sendable {
-    func request<T: Endpoint>(_ endpoint: T) async throws -> T.Model
-}
-
 /// 用 actor 把 Alamofire 的 `Session` 關起來。
 /// `Session` 的文件說它 thread-safe,但 5.8.1 沒有 Sendable 標註;與其在型別上
 /// 掛 `@unchecked Sendable` 自己保證,不如讓編譯器用 actor 隔離幫忙保證。
-actor APIService: NetworkService {
+actor APIService {
 
     static let share: APIService = .init()
 
