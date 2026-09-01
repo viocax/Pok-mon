@@ -16,19 +16,30 @@ final class PokemonDetailStore {
 
     private(set) var viewState: State = .init()
 
-    private let dependency: Dependency
+    let pokemon: PokmonResponse
+
+    private let api: PokemonAPIClient
+    private let favorites: FavoritesClient
 
     /// `private(set)` 是為了讓測試能 await 到非同步流程結束
     private(set) var loadTask: Task<Void, Never>?
 
     // MARK: - Life cycle
 
-    init(dependency: Dependency) {
-        self.dependency = dependency
+    /// `api` 與 `favorites` 的預設參數是唯一的快照點——`@TaskLocal` 只能在這裡讀。
+    init(
+        pokemon: PokmonResponse,
+        species: PokemonSpeciesResponse?,
+        api: PokemonAPIClient = Dependencies.api,
+        favorites: FavoritesClient = Dependencies.favorites
+    ) {
+        self.pokemon = pokemon
+        self.api = api
+        self.favorites = favorites
 
-        viewState.title = "No.\(dependency.number)"
-        viewState.isFavorite = dependency.favorite.isContain("\(dependency.number)")
-        viewState.species = dependency.spiecs
+        viewState.title = "No.\(pokemon.id)"
+        viewState.isFavorite = favorites.contains(pokemon.id)
+        viewState.species = species
     }
 
     // MARK: - Input
@@ -42,7 +53,7 @@ final class PokemonDetailStore {
             toggleFavorite(id)
 
         case .viewWillDisappear:
-            dependency.favorite.synchronize()
+            favorites.synchronize()
 
         case .viewDidDisappear:
             loadTask?.cancel()
@@ -68,8 +79,7 @@ final class PokemonDetailStore {
             defer { if !Task.isCancelled { self.viewState.isLoading = false } }
 
             do {
-                let species: PokemonSpeciesResponse = try await self.dependency.service
-                    .request(PokemonSpeciesEndpoint(id: "\(self.dependency.number)"))
+                let species = try await self.api.species(self.pokemon.id)
                 guard !Task.isCancelled else { return }
 
                 self.viewState.species = species
@@ -83,13 +93,14 @@ final class PokemonDetailStore {
     }
 
     private func toggleFavorite(_ id: Int) {
-        let key = "\(id)"
-        if dependency.favorite.isContain(key) {
-            dependency.favorite.remove(key)
+        // 依儲存決定方向，不依 viewState.isFavorite 這個畫面快取——
+        // 兩者不同步時前者才是對的。PokemonDetailStoreTests 有測試釘住這點。
+        if favorites.contains(id) {
+            favorites.remove(id)
         } else {
-            dependency.favorite.insert(key)
+            favorites.add(id)
         }
-        viewState.isFavorite = dependency.favorite.isContain(key)
+        viewState.isFavorite = favorites.contains(id)
     }
 }
 
@@ -129,25 +140,4 @@ extension PokemonDetailStore {
         let isFavorite: @MainActor () -> Bool
     }
 
-    struct Dependency {
-        var number: Int { pokemon.id }
-        let pokemon: PokmonResponse
-        var spiecs: PokemonSpeciesResponse?
-        let service: any NetworkService
-        let favorite: any FavoriteUseCase
-
-        init(
-            spiecs: PokemonSpeciesResponse?,
-            pokemon: PokmonResponse,
-            service: any NetworkService = Dependencies.network,
-            favorite: any FavoriteUseCase = Dependencies.favorite
-        ) {
-            self.spiecs = spiecs
-            self.pokemon = pokemon
-            self.service = service
-            self.favorite = favorite
-        }
-    }
-
-    var pokemon: PokmonResponse { dependency.pokemon }
 }

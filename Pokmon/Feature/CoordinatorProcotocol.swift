@@ -24,7 +24,7 @@ final class Coordinator: PokemonListStore.Coordinator {
     func showDetailPage(model: PokemonShareData) async -> PokemonSpeciesResponse? {
         guard let pokemon = try? model.getPokemon() else { return nil }
 
-        let store = PokemonDetailStore(dependency: .init(spiecs: model.spiecs, pokemon: pokemon))
+        let store = PokemonDetailStore(pokemon: pokemon, species: model.spiecs)
         let detailViewController = PokemonDeatilPageViewController(store: store)
 
         return await withCheckedContinuation { continuation in
