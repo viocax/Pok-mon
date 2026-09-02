@@ -8,38 +8,29 @@
 import Alamofire
 import Foundation
 
-/// 用 actor 把 Alamofire 的 `Session` 關起來。
-/// `Session` 的文件說它 thread-safe,但 5.8.1 沒有 Sendable 標註;與其在型別上
-/// 掛 `@unchecked Sendable` 自己保證,不如讓編譯器用 actor 隔離幫忙保證。
-actor APIService {
+/// `Session` 自 Alamofire 5.10 起就是 `@unchecked Sendable`——thread-safety 的
+/// 保證由 Alamofire 自己給，不必再借 actor 隔離幫忙。少一層 actor 也就少了每個
+/// 請求進出隔離域的那次 hop。
+///
+/// `startRequestsImmediately` 回到預設的 `true`：`DataTask.value` 只 await 結果，
+/// **不會**自己 resume（`resume()` 是獨立的公開方法），維持 `false` 會直接掛住。
+final class APIService: Sendable {
 
     static let share: APIService = .init()
 
-    private let session: Alamofire.Session = {
-        let configuration = URLSessionConfiguration.default
-        return Session(configuration: configuration, startRequestsImmediately: false)
-    }()
+    private let session: Alamofire.Session = .init(configuration: URLSessionConfiguration.default)
 
     private init() {}
 
     func request<T: Endpoint>(_ endpoint: T) async throws -> T.Model {
-        try await withCheckedThrowingContinuation { continuation in
-            do {
-                let dataRequest = try makeRequest(endpoint)
-                dataRequest.responseDecodable(of: T.Model.self) { response in
-                    switch response.result {
-                    case .success(let model):
-                        continuation.resume(returning: model)
-                    case .failure(let fail):
-                        continuation.resume(throwing: PkError.afError(fail))
-                    }
-                }
-                dataRequest.resume()
-            } catch let afError as AFError {
-                continuation.resume(throwing: PkError.afError(afError))
-            } catch {
-                continuation.resume(throwing: PkError.unknown(error))
-            }
+        do {
+            return try await makeRequest(endpoint)
+                .serializingDecodable(T.Model.self)
+                .value
+        } catch let afError as AFError {
+            throw PkError.afError(afError)
+        } catch {
+            throw PkError.unknown(error)
         }
     }
 
