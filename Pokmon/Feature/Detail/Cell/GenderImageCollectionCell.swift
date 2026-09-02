@@ -25,28 +25,46 @@ class GenderImageCollectionCell: UICollectionViewCell {
         MainActor.assumeIsolated {
             genderImageView.contentMode = .scaleAspectFit
             iconImageView.contentMode = .scaleAspectFit
-            iconImageView.image = .placeHolder
-            iconImageView.rotate()
+            resetContent()
         }
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
         iconImageView.kf.cancelDownloadTask()
-        iconImageView.image = .placeHolder
+        resetContent()
     }
-    
 
     func bindView(_ gender: Gender, url: String) {
         genderImageView.image = .init(named: gender.rawValue)
-        iconImageView.kf.setImage(with: URL(string: url), placeholder: UIImage.placeHolder, completionHandler: { [weak self] result in
-            self?.iconImageView.stopRotate()
-            switch result {
-            case .failure:
-                self?.iconImageView.image = .errorImage
-            default:
-                break
+        iconImageView.kf.setImage(
+            with: URL(string: url),
+            placeholder: UIImage.placeHolder,
+            completionHandler: { [weak self] result in
+                guard let self else { return }
+
+                // 跟 PokemonCell 同一個理由：取消（prepareForReuse 的
+                // cancelDownloadTask）與「已不是當前請求」都會走 failure，但都不是
+                // 載入失敗。不濾掉就會把 errorImage 蓋到下一格，也會停掉剛重啟的轉圈。
+                if case .failure(let error) = result,
+                   error.isTaskCancelled || error.isNotCurrentTask {
+                    return
+                }
+
+                self.iconImageView.stopRotate()
+                if case .failure = result {
+                    self.iconImageView.image = .errorImage
+                }
             }
-        })
+        )
+    }
+
+    /// 內容欄位的初始狀態，`awakeFromNib` 與 `prepareForReuse` 共用同一份定義。
+    ///
+    /// `rotate()` 原本只在 `awakeFromNib` 掛一次，而每次載入完成都會 `stopRotate`，
+    /// 所以 cell 第一次載完圖之後就再也不轉了。
+    private func resetContent() {
+        iconImageView.image = .placeHolder
+        iconImageView.rotate()
     }
 }
