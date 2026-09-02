@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 protocol SpeciesUpdatable: AnyObject {
     func updateDetailPage(response sepies: PokemonSpeciesResponse)
 }

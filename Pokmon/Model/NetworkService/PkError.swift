@@ -6,6 +6,7 @@
 //
 
 import Alamofire
+import Foundation
 
 enum PkError: Error {
     case badRequest

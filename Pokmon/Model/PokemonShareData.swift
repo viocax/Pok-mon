@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 protocol PokemonShareData {
     func getPokemon() throws -> PokmonResponse
     var spiecs: PokemonSpeciesResponse? { get }

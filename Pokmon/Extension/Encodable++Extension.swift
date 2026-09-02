@@ -6,6 +6,7 @@
 //
 
 import Alamofire
+import Foundation
 
 extension Encodable {
     func encodeToParameter() throws -> Parameters? {

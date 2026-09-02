@@ -5,7 +5,6 @@
 //  Created by drake on 2024/3/8.
 //
 
-import RxSwift
 import UIKit
 
 class IndicatorView: UIView {
@@ -55,34 +54,4 @@ class IndicatorView: UIView {
     public func stopAnimation() {
         indicatorView.stopAnimating()
     }
-}
-
-
-extension Reactive where Base: UIView {
-    var indicatorAnimator: Binder<Bool> {
-        return Binder(self.base) { (targetView, isLoading) in
-            if isLoading {
-                let indicatorView: IndicatorView
-                if let indicator = targetView.subviews.first(where: { $0 is IndicatorView }) as? IndicatorView {
-                    indicatorView = indicator
-                } else {
-                    let indicator = IndicatorView()
-                    targetView.addSubview(indicator)
-                    indicator.translatesAutoresizingMaskIntoConstraints = false
-                    NSLayoutConstraint.activate([
-                        indicator.leadingAnchor.constraint(equalTo: targetView.leadingAnchor),
-                        indicator.trailingAnchor.constraint(equalTo: targetView.trailingAnchor),
-                        indicator.bottomAnchor.constraint(equalTo: targetView.bottomAnchor),
-                        indicator.topAnchor.constraint(equalTo: targetView.topAnchor)
-                    ])
-                    indicatorView = indicator
-                }
-                indicatorView.startAnimation()
-            } else {
-                let indicator = self.base.subviews.first(where: { $0 is IndicatorView }) as? IndicatorView
-                indicator?.stopAnimation()
-                indicator?.removeFromSuperview()
-            }
-         }
-     }
 }

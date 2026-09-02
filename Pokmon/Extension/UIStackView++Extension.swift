@@ -6,19 +6,16 @@
 //
 
 import UIKit
-import RxSwift
 
 extension UIStackView {
-    var types: Binder<[TypeCornerProtocol]> {
-        return Binder(self) { stackView, types in
-            // TODO: 優化
-            stackView.arrangedSubviews.forEach {
-                $0.removeFromSuperview()
-            }
-            types.map(TypeCornerButton.init)
-                .forEach { button in
-                    stackView.addArrangedSubview(button)
-                }
+    func setTypes(_ types: [any TypeCornerProtocol]) {
+        // TODO: 優化
+        arrangedSubviews.forEach {
+            $0.removeFromSuperview()
         }
+        types.map(TypeCornerButton.init)
+            .forEach { button in
+                addArrangedSubview(button)
+            }
     }
 }

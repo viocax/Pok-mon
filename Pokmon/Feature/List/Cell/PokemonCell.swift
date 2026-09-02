@@ -6,8 +6,6 @@
 //
 
 import UIKit
-import RxSwift
-import RxCocoa
 import Kingfisher
 
 final class PokemonCell: UICollectionViewCell {
@@ -17,7 +15,8 @@ final class PokemonCell: UICollectionViewCell {
     private let numberLabel: UILabel = .init()
     private let nameLabel: UILabel = .init()
     private let typesStackView: UIStackView = .init()
-    private var disposeBag: DisposeBag = .init()
+    private weak var viewModel: CellViewModel?
+    private var observationTokens: [ObservationToken] = []
     private let animation: UIViewPropertyAnimator = .init(duration: 0.3, curve: .linear)
 
     override init(frame: CGRect) {
@@ -32,59 +31,65 @@ final class PokemonCell: UICollectionViewCell {
     }
     override func prepareForReuse() {
         super.prepareForReuse()
-        disposeBag = .init()
+        observationTokens.forEach { $0.cancel() }
+        observationTokens = []
+        viewModel?.cancel()
+        viewModel = nil
         thumbNailImageView.kf.cancelDownloadTask()
         thumbNailImageView.image = .placeHolder
     }
 
     func bindView(_ viewModel: CellViewModel) {
-        let bindViewRelay = PublishRelay<Void>()
-        defer { bindViewRelay.accept(()) }
-        let input = CellViewModel
-            .Input(
-                bindView: bindViewRelay.asDriver(onErrorDriveWith: .never())
-            )
-        let output = viewModel.transform(input)
-        output.name
-            .drive(nameLabel.rx.text)
-            .disposed(by: disposeBag)
-        output.imageURL
-            .drive(imageURL)
-            .disposed(by: disposeBag)
-        output.types
-            .compactMap(\.first?.color.cgColor)
-            .drive(cornerView.layer.rx.borderColor)
-            .disposed(by: disposeBag)
-        output.types
-            .drive(onNext: { [weak self] types in
-                self?.typesStackView.types.onNext(types)
-                self?.typesStackView.insertArrangedSubview(.init(), at: .zero)
-                self?.cornerView.gradientLayer.colors = [
+        self.viewModel = viewModel
+
+        observationTokens = [
+            observe { [weak self] in
+                guard let self, let viewModel = self.viewModel else { return }
+                self.numberLabel.text = viewModel.numberText
+            },
+
+            observe { [weak self] in
+                guard let self, let viewModel = self.viewModel else { return }
+                self.nameLabel.text = viewModel.displayName
+            },
+
+            observe { [weak self] in
+                guard let self, let viewModel = self.viewModel,
+                      let urlString = viewModel.imageURL else { return }
+                self.setImage(urlString)
+            },
+
+            observe { [weak self] in
+                guard let self, let viewModel = self.viewModel else { return }
+                let types = viewModel.types
+                guard !types.isEmpty else { return }
+                self.cornerView.layer.borderColor = types.first?.color.cgColor
+                self.typesStackView.setTypes(types)
+                self.typesStackView.insertArrangedSubview(.init(), at: .zero)
+                self.cornerView.gradientLayer.colors = [
                     types.first?.color.cgColor ?? UIColor.white.cgColor,
                     UIColor.white.cgColor
                 ]
-            })
-            .disposed(by: disposeBag)
-        output.number
-            .drive(numberLabel.rx.text)
-            .disposed(by: disposeBag)
+            }
+        ]
+
+        viewModel.bindView()
     }
 }
 
 // MARK: private
 private extension PokemonCell {
-    var imageURL: Binder<String> {
-        return Binder(self.thumbNailImageView) { image, urlString in
-            image.kf.setImage(with: URL(string: urlString), placeholder: UIImage.placeHolder, completionHandler: { result in
-                image.stopRotate()
-                switch result {
-                case .failure:
-                    image.image = .errorImage
-                default:
-                    break
+    func setImage(_ urlString: String) {
+        thumbNailImageView.kf.setImage(
+            with: URL(string: urlString),
+            placeholder: UIImage.placeHolder,
+            completionHandler: { [weak self] result in
+                self?.thumbNailImageView.stopRotate()
+                if case .failure = result {
+                    self?.thumbNailImageView.image = .errorImage
                 }
-            })
-        }
+            }
+        )
     }
     func setupUIAttribute() {
         cornerView.layer.cornerRadius = 8
