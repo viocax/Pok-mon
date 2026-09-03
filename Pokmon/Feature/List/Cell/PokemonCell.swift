@@ -36,7 +36,7 @@ final class PokemonCell: UICollectionViewCell {
         viewModel?.cancel()
         viewModel = nil
         thumbNailImageView.kf.cancelDownloadTask()
-        thumbNailImageView.image = .placeHolder
+        resetContent()
     }
 
     func bindView(_ viewModel: CellViewModel) {
@@ -84,9 +84,21 @@ private extension PokemonCell {
             with: URL(string: urlString),
             placeholder: UIImage.placeHolder,
             completionHandler: { [weak self] result in
-                self?.thumbNailImageView.stopRotate()
+                guard let self else { return }
+
+                // 取消（prepareForReuse 的 cancelDownloadTask）與「已不是當前請求」
+                // （舊 binding 的結果在 cell 重新綁定後才回來）都會走 failure，
+                // 但兩者都不是載入失敗。Kingfisher 在 task identity 不符時仍然會
+                // 呼叫這裡，而且連成功的過期請求也包成 failure，所以必須先濾掉，
+                // 否則會把 errorImage 蓋到下一格上，也會停掉剛重啟的轉圈。
+                if case .failure(let error) = result,
+                   error.isTaskCancelled || error.isNotCurrentTask {
+                    return
+                }
+
+                self.thumbNailImageView.stopRotate()
                 if case .failure = result {
-                    self?.thumbNailImageView.image = .errorImage
+                    self.thumbNailImageView.image = .errorImage
                 }
             }
         )
@@ -101,7 +113,20 @@ private extension PokemonCell {
         nameLabel.font = .systemFont(ofSize: 16)
         typesStackView.axis = .horizontal
         typesStackView.spacing = 8
+        resetContent()
+    }
+
+    /// 內容欄位的初始狀態，init 與 `prepareForReuse` 共用同一份定義。
+    ///
+    /// 這裡的每一項都對應一個「會 early return 的 observe closure」：
+    /// `types` 為空時第四個 closure 直接 return，`imageURL` 為 nil 時第三個直接
+    /// return——不在這裡清，重用後就會留著上一格的資料。
+    func resetContent() {
+        numberLabel.text = nil
+        nameLabel.text = nil
+        typesStackView.setTypes([])
         cornerView.layer.borderColor = UIColor.gray.cgColor
+        cornerView.gradientLayer.colors = nil
         thumbNailImageView.image = .placeHolder
         thumbNailImageView.rotate()
     }

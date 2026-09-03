@@ -36,13 +36,20 @@ import Testing
         )
     }
 
+    /// 未指定時回 nil，等同「使用者離開詳細頁但沒帶回 species」。
+    private func makeNavigator(
+        showDetail: @escaping @MainActor (any PokemonShareData) async -> PokemonSpeciesResponse? = { _ in nil }
+    ) -> PokemonListNavigator {
+        .init(showDetail: showDetail)
+    }
+
     private func makeStore(
         api: PokemonAPIClient? = nil,
         favorites: FavoritesClient? = nil,
-        coordinator: MockCoordinator = .init()
+        navigator: PokemonListNavigator? = nil
     ) -> PokemonListStore {
         PokemonListStore(
-            coordinator: coordinator,
+            navigator: navigator ?? makeNavigator(),
             api: api ?? makeAPI(),
             favorites: favorites ?? makeFavorites()
         )
@@ -163,15 +170,15 @@ import Testing
     }
 
     @Test func 點選cell後把species回填() async throws {
-        let coordinator = MockCoordinator()
-        coordinator.injectShowDetailPageAsync = Stub.species(cnName: "皮卡丘")
         let cell = CellViewModel(
             source: try Stub.item(25),
             api: makeAPI()
         )
         #expect(cell.spiecs == nil)
 
-        let store = makeStore(coordinator: coordinator)
+        let store = makeStore(
+            navigator: makeNavigator(showDetail: { _ in Stub.species(cnName: "皮卡丘") })
+        )
         store.send(.tapCell(cell))
         await store.detailTask?.value
 

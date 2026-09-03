@@ -20,11 +20,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // setup rootWindow
         self.window = .init(windowScene: scene)
-        let coordinator = Coordinator()
-        let store = PokemonListStore(coordinator: coordinator)
-        let viewController = PokemonListViewController(store: store)
-        coordinator.viewController = viewController
-        self.window?.rootViewController = UINavigationController(rootViewController: viewController)
+        self.window?.rootViewController = PokemonListScene.make()
         self.window?.makeKeyAndVisible()
     }
 

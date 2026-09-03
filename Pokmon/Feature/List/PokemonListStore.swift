@@ -18,7 +18,7 @@ final class PokemonListStore {
 
     private let api: PokemonAPIClient
     private let favorites: FavoritesClient
-    private let coordinator: Coordinator
+    private let navigator: PokemonListNavigator
 
     /// `private(set)` 是為了讓測試能 await 到非同步流程結束
     private(set) var loadTask: Task<Void, Never>?
@@ -28,11 +28,11 @@ final class PokemonListStore {
 
     /// `api` 與 `favorites` 的預設參數是唯一的快照點——`@TaskLocal` 只能在這裡讀。
     init(
-        coordinator: Coordinator,
+        navigator: PokemonListNavigator,
         api: PokemonAPIClient = Dependencies.api,
         favorites: FavoritesClient = Dependencies.favorites
     ) {
-        self.coordinator = coordinator
+        self.navigator = navigator
         self.api = api
         self.favorites = favorites
     }
@@ -104,7 +104,7 @@ final class PokemonListStore {
         detailTask = Task { [weak self] in
             guard let self else { return }
 
-            let species = await self.coordinator.showDetailPage(model: cell)
+            let species = await self.navigator.showDetail(cell)
             guard !Task.isCancelled, let species else { return }
 
             cell.updateDetailPage(response: species)
@@ -123,8 +123,6 @@ final class PokemonListStore {
 // MARK: - State / Action
 
 extension PokemonListStore {
-
-    typealias Coordinator = CoordinatorProcotocol & PokemonListCoordinatorProcotocol
 
     struct State: Equatable {
         var isListLayout: Bool = true
