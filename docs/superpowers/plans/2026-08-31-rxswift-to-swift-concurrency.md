@@ -2224,6 +2224,22 @@ nonisolated deinit 碰不到非 Sendable 的 closure,改用 isolated deinit。"
 
 ### Task 9: 撰寫遷移講稿
 
+> **已由 `docs/uikit-to-concurrency.md` 取代（2026-09-04）。**
+>
+> 講稿的定位在事後改了：從「Rx → Concurrency 的逐章回顧」變成「UIKit 裡怎麼用
+> Swift Concurrency，以及怎麼慢慢往 SwiftUI 走」，場次是 15–20 分鐘的團隊分享。
+> 11 章的結構因此收斂成單一檔案的 6 節，並補上一個 SwiftUI spike
+> （`Pokmon/Feature/List/SwiftUI/`）。
+>
+> 下面這份大綱另有四處前提已經過期，**不要照著做**：CocoaPods 已換成 SPM
+> （沒有 Podfile 了）、`FavoriteUseCase` 已改名 `UserDefaultStore` 且整層 UseCase
+> 協定被 client 取代、Alamofire 與 Kingfisher 已升到 Swift 6-ready 版本（所以
+> 「Pods 停在 Swift 5」的論證要改寫）、測試數是 29 而不是 15。
+>
+> 另外第 6 章原本要寫的「cell 重用 bug 是遷移引進的」是錯的——逐行比對 `72cbcf4`
+> 的 Rx 版之後確認，三個缺陷在遷移前就一模一樣存在。正確的說法寫在新文件的 §5。
+
+
 **Files:**
 - Create: `docs/uikit-to-concurrency/README.md`
 - Create: `docs/uikit-to-concurrency/01-why-migrate.md`
